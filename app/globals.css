@@ -33,6 +33,12 @@
     --code-bg: #f2f5fb;
     --glass: rgba(255, 255, 255, 0.68);
     --header: rgba(245, 247, 252, 0.72);
+    --nav-inset: rgba(15, 26, 51, 0.045);
+    --nav-pill: linear-gradient(180deg, #ffffff, #f1f5fe);
+    --nav-pill-shadow:
+      inset 0 1px 0 #ffffff, 0 1px 2px rgba(18, 32, 64, 0.08),
+      0 3px 10px -4px rgba(18, 32, 64, 0.22);
+    --hover-surface: rgba(10, 15, 28, 0.05);
     --ring: rgba(47, 93, 208, 0.32);
     --glow: 63, 123, 255;
     --ease: cubic-bezier(0.23, 1, 0.32, 1);
@@ -63,6 +69,11 @@
     --code-bg: #04060c;
     --glass: rgba(16, 20, 32, 0.58);
     --header: rgba(7, 10, 18, 0.62);
+    --nav-inset: rgba(0, 0, 0, 0.22);
+    --nav-pill: linear-gradient(180deg, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0.07));
+    --nav-pill-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+    --hover-surface: rgba(255, 255, 255, 0.06);
     --ring: rgba(169, 196, 255, 0.4);
     --glow: 123, 77, 255;
     color-scheme: dark;
@@ -468,6 +479,23 @@
       rgba(255, 255, 255, 0.9),
       transparent 72%
     );
+  }
+
+  .nav-inset {
+    background: var(--nav-inset);
+  }
+
+  .nav-pill {
+    background: var(--nav-pill);
+    box-shadow: var(--nav-pill-shadow);
+  }
+
+  .nav-hover {
+    transition: background-color 0.18s var(--ease), color 0.18s var(--ease);
+  }
+
+  .nav-hover:hover {
+    background: var(--hover-surface);
   }
 
   .nav-link {

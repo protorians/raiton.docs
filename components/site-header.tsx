@@ -78,11 +78,11 @@ export function SiteHeader() {
         <nav className="hidden items-center justify-self-center md:flex" aria-label="Navigation principale">
           <div
             ref={navRef}
-            className="relative flex items-center gap-0.5 rounded-full border border-[var(--border)] bg-[rgba(0,0,0,.22)] p-1"
+            className="nav-inset relative flex items-center gap-0.5 rounded-full border border-[var(--border)] p-1"
           >
             <span
               aria-hidden
-              className="absolute top-1 h-[calc(100%-8px)] rounded-full bg-[linear-gradient(180deg,rgba(255,255,255,.17),rgba(255,255,255,.07))] shadow-[inset_0_1px_0_rgba(255,255,255,.22),0_2px_8px_-2px_rgba(0,0,0,.5)] transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(.23,1,.32,1)]"
+              className="nav-pill absolute top-1 h-[calc(100%-8px)] rounded-full transition-[transform,width,opacity] duration-300 ease-[cubic-bezier(.23,1,.32,1)]"
               style={{
                 transform: `translateX(${pill.left}px)`,
                 width: pill.width,
@@ -140,7 +140,7 @@ export function SiteHeader() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] text-[var(--fg-soft)] transition-colors hover:bg-[rgba(255,255,255,.06)] hover:text-[var(--fg)]"
+                className="nav-hover flex items-center justify-between rounded-xl px-3 py-2.5 text-[14px] text-[var(--fg-soft)] hover:text-[var(--fg)]"
               >
                 {link.label}
                 <span className="font-mono text-[11px] text-[var(--faint)]">↗</span>
@@ -157,7 +157,7 @@ export function SiteHeader() {
             href={SITE.github}
             target="_blank"
             rel="noreferrer"
-            className="mt-2 flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13.5px] text-[var(--fg-soft)] hover:bg-[rgba(255,255,255,.06)]"
+            className="nav-hover mt-2 flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13.5px] text-[var(--fg-soft)]"
           >
             <Github className="h-4 w-4" /> GitHub
           </a>
