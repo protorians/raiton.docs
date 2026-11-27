@@ -51,6 +51,54 @@ app.use(Security.cors({
 | `exposeHeaders` | En-têtes lisibles par le navigateur |
 | `maxAge` | Durée de cache du preflight |
 
+### CORS en production
+
+Dès que `credentials: true`, `origin: "*"` est interdit par la spec Fetch : le
+navigateur refuse la réponse. Comparez une liste explicite et acceptez les
+origines natives des webviews mobiles/desktop :
+
+```ts
+const allowedOrigins = (env("CORS_ORIGIN", "") ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+
+const isNativeOrigin = (origin: string): boolean =>
+  origin === "null" ||
+  ["file:", "capacitor:", "tauri:", "ionic:", "expo:", "app:"].some((scheme) =>
+    origin.startsWith(scheme),
+  )
+
+app.use(Security.cors({
+  origin: (origin) =>
+    allowedOrigins.includes(origin) || isNativeOrigin(origin),
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  headers: [
+    "Content-Type",
+    "Accept",
+    "Authorization",
+    "X-Organization-Id",
+    "X-CSRF-Token",
+    "X-Client-Type",
+    "X-Request-Id",
+    "Idempotency-Key",
+  ],
+  credentials: true,
+  exposeHeaders: ["X-Request-Id"],
+}))
+```
+
+Points de vigilance :
+
+- un en-tête utilisé par un client mais absent de `headers` fait échouer le
+  préflight, même si la route est correcte ;
+- `exposeHeaders` est requis pour lire un en-tête personnalisé côté navigateur
+  en cross-origin ;
+- une requête native sans en-tête `Origin` (React Native, Electron) n'est pas
+  soumise à CORS ; ne l'ajoutez pas artificiellement à la liste ;
+- ne déduisez pas les origines de `NODE_ENV` : configurez-les explicitement par
+  environnement.
+
 ## Rate limit
 
 ```ts
@@ -70,6 +118,12 @@ app.register(Security.bodyLimit(1_000_000)) // 1 Mo
 ```
 
 Rejette les requêtes dont `content-length` dépasse la limite avec `413`.
+
+:::note
+Gardez la limite applicative sous le plafond interne de `Bun.serve` (128 Mo).
+Au-delà, la requête est rejetée avant votre middleware et le message d'erreur
+n'est pas celui de Raiton.
+:::
 
 ## Method guard
 
@@ -106,6 +160,31 @@ Options complémentaires :
 
 - `client.headerName` et `client.skipClients` pour la détection mobile/desktop ;
 - `cookieOptions` (`httpOnly`, `secure`, `sameSite`, `path`, `domain`, `maxAge`).
+
+Les clients mobiles et desktop n'utilisent généralement pas de cookie de
+session : `skipClients: ["mobile", "desktop"]` évite de leur imposer un token
+CSRF qu'ils ne peuvent pas produire.
+
+```ts
+app.use(Security.csrf({
+  mode: CSRFModeEnum.DOUBLE_SUBMIT,
+  secret: env("CSRF_SECRET", ""),
+  cookieName: "_csrf",
+  headerName: "X-CSRF-Token",
+  skip: ["/api/kyc/webhooks"],
+  client: {
+    headerName: "X-Client-Type",
+    skipClients: ["mobile", "desktop"],
+  },
+}))
+```
+
+:::warning
+Exemptez un webhook serveur-à-serveur **uniquement** s'il est authentifié par un
+autre mécanisme (signature HMAC, mTLS, clé API vérifiée dans le cas d'usage).
+Un chemin exempté sans vérification est une porte ouverte. Vérifiez la signature
+sur les **octets bruts** du corps, avant désérialisation.
+:::
 
 ### Décorateurs CSRF
 

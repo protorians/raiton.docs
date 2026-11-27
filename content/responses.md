@@ -58,6 +58,50 @@ La réponse produite :
 }
 ```
 
+:::warning
+`RaitonResponses()` construit un **corps**, pas le statut de la réponse. En 6.8
+et antérieur, un appel `RaitonResponses("Erreur", null, 500)` renvoie `200 OK`
+avec `statusCode: 500` dans le corps. Un client qui se fie au statut HTTP
+considère donc l'échec comme un succès. Pour une erreur, levez une
+`HttpException` (ou utilisez le helper `fail` ci-dessous).
+:::
+
+### Helper `fail` pour les erreurs
+
+Dans un contrôleur, centralisez la traduction d'une erreur inconnue en
+`HttpException` :
+
+```ts
+import { HttpException, HttpStatus } from "raiton/framework"
+
+export function fail(
+  error: unknown,
+  fallbackStatus: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+): never {
+  if (error instanceof HttpException) throw error
+
+  const candidate = error as any
+  const status = candidate?.status ?? candidate?.statusCode ?? fallbackStatus
+
+  throw new HttpException(
+    typeof candidate?.message === "string"
+      ? candidate.message
+      : "Erreur interne du service.",
+    (Number.isInteger(status) && status >= 400 && status <= 599
+      ? status
+      : fallbackStatus) as HttpStatus,
+  )
+}
+```
+
+```ts
+try {
+  return RaitonResponses("OK", await this.useCase.execute(input), HttpStatus.OK)
+} catch (error) {
+  fail(error)
+}
+```
+
 ## Exceptions HTTP
 
 ```ts
@@ -73,16 +117,21 @@ getOne(@Param("id") id: string) {
 }
 ```
 
-Le constructeur est `HttpException(message, statusCode?)`. L'exception est
-attrapée par `Application.handle()` et rendue en JSON :
+Le constructeur est `HttpException(message, statusCode?, errorCode?)`.
+`errorCode` est optionnel : il ajoute un code métier stable au payload. Raiton
+pose le statut HTTP réel, puis rend l'exception en JSON :
 
 ```json
 {
   "message": "Utilisateur introuvable",
   "statusCode": 404,
+  "errorCode": "USER_NOT_FOUND",
   "error": true
 }
 ```
+
+En développement, la réponse peut aussi contenir `stack` ; elle est supprimée
+en production.
 
 ## Réponse d'erreur explicite
 
@@ -118,7 +167,8 @@ export(@Reply() reply: any) {
 
 ## Statut personnalisé
 
-Un objet retourné peut porter `statusCode` ; `Application.handle()` le respecte :
+À partir de **6.9**, un objet retourné peut porter `statusCode` et
+`Application.handle()` le respecte :
 
 ```ts
 return {
@@ -128,6 +178,10 @@ return {
   data: user,
 }
 ```
+
+En 6.8 et antérieur, ce objet est envoyé avec `200 OK` : le `statusCode` reste
+dans le corps. Utilisez alors `HttpException` pour un statut d'erreur, ou
+`@Reply()` pour un statut de succès non standard.
 
 C'est particulièrement utile pour les health checks et les handlers manuels.
 

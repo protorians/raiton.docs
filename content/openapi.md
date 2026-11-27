@@ -14,8 +14,9 @@ Raiton génère un document OpenAPI à partir des routes montées, des contrats
 ```ts
 import { openApiPlugin } from "raiton/framework"
 
-app.register(openApiPlugin({
+app.use(openApiPlugin({
   route: "/docs",
+  ui: defaultOpenApiUi, // générateur HTML (Redoc, Swagger UI…)
   endpoint: "/docs/json",
   title: "Users API",
   version: "1.0.0",
@@ -25,16 +26,35 @@ app.register(openApiPlugin({
 
 | Option | Défaut | Description |
 |---|---|---|
-| `route` | `/docs` | Interface HTML (Redoc). `false` pour désactiver |
+| `route` | — | Interface HTML. Nécessite aussi `ui` |
+| `ui` | — | Générateur HTML de l'interface |
 | `endpoint` | `/docs/json` | Document JSON. `false` pour désactiver |
 | `title` | `API` | Titre du document |
 | `version` | `1.0.0` | Version de l'API |
 | `description` | — | Description |
-| `ui` | Redoc | Générateur HTML personnalisé |
 | `contact`, `license`, `termsOfService` | — | Métadonnées OpenAPI |
 
-Les chemins sont relatifs au préfixe de l'application. Avec `prefix: "/api"`,
-l'interface est servie sur `/api/docs` et le JSON sur `/api/docs/json`.
+`route` n'est servie que si `ui` est fourni. Si vous ne voulez que le document
+JSON (cas fréquent derrière un portail ou un générateur de client externe),
+omettez `route` et `ui` :
+
+```ts
+app.use(openApiPlugin({
+  title: "API Core",
+  version: "0.149.0",
+  endpoint: "/docs/json",
+}))
+```
+
+Les chemins sont relatifs au préfixe de l'application. Avec `prefix: "/api"` et
+`route: "/docs"`, l'interface est servie sur `/api/docs` et le JSON sur
+`/api/docs/json`.
+
+:::note
+`register()` et `use()` acceptent tous deux un plugin. Pour OpenAPI, `use()`
+partage le scope courant et rend les routes visibles au même niveau que le
+reste de l'application. Utilisez la même forme dans tout le bootstrapper.
+:::
 
 ## Contrats automatiques
 

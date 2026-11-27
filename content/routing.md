@@ -61,6 +61,59 @@ export class HealthController {
 }
 ```
 
+## Contrôleur mince, cas d'usage injecté
+
+Sur une API réelle, le contrôleur ne contient pas la règle métier. Il reçoit un
+cas d'usage par constructeur, valide la frontière HTTP et formate la réponse.
+L'injection par type fonctionne sans `@Inject()` si `emitDecoratorMetadata` est
+activé.
+
+```ts
+import {
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  Body,
+  Controllable,
+  HttpStatus,
+  Post,
+  RaitonResponses,
+  RouteInteraction,
+} from "raiton/framework"
+import { SignInDto } from "@/modules/identity/application/dtos/sign-in.dto"
+import SignInUseCase from "@/modules/identity/application/use-cases/sign-in.use-case"
+
+@ApiTags("Authentication")
+@Controllable("/auth/sign-in")
+export default class SignInController {
+  constructor(private readonly service: SignInUseCase) {}
+
+  @Post("/")
+  @RouteInteraction("[username] est désormais connecté")
+  @ApiOperation({ summary: "Authentifier un utilisateur" })
+  @ApiResponse({ status: 200, description: "Connexion réussie" })
+  @ApiResponse({ status: 401, description: "Identifiants invalides" })
+  async login(@Body() body: SignInDto) {
+    const session = await this.service.login(body)
+    return RaitonResponses("Connexion réussie", session, HttpStatus.OK)
+  }
+}
+```
+
+- `@RouteInteraction()` décrit l'action dans le manifeste et les journaux ; il
+  ne modifie pas la route.
+- L'export par défaut est facultatif. Il facilite l'import dans un test ou un
+  composition root, mais le scanner monte toute classe exportée.
+- Pour une erreur métier, préférez `throw new HttpException(...)` :
+  `RaitonResponses` décrit un corps, pas le statut HTTP. Voir
+  [Réponses et erreurs](/docs/responses).
+
+:::tip
+Un contrôleur par intention (une route) facilite OpenAPI et les tests ; un
+contrôleur par ressource reste plus lisible pour un CRUD homogène. Le critère
+est la cohésion des dépendances et de la documentation.
+:::
+
 ## Paramètres d'URL
 
 Les segments `:name` sont capturés et transmis via `@Param("name")`.

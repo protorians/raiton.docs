@@ -130,6 +130,47 @@ Le nom identifie la garde dans le registre. La même garde peut être réutilis�
 sur plusieurs routes. Les guards sont implémentés comme des middlewares : ils
 s'exécutent donc dans l'ordre décrit plus haut.
 
+### Composer un guard métier
+
+Quand plusieurs middlewares doivent s'enchaîner (session, activité, organisation
+courante), exposez un seul décorateur plutôt que d'empiler des décorateurs sur
+le contrôleur :
+
+```ts
+import { Middleware } from "raiton/framework"
+
+export function UserAccessGuard(options: { organization?: boolean } = {}) {
+  return (target: any, key?: string, descriptor?: any) => {
+    Middleware(SessionGuard)(target, key, descriptor)
+    Middleware(UserActivityMiddleware)(target, key, descriptor)
+
+    if (options.organization) {
+      // Lit `context.state.user`, publié par SessionGuard juste avant.
+      Middleware(CurrentOrganizationMiddleware)(target, key, descriptor)
+    }
+  }
+}
+```
+
+```ts
+@Controllable("/access-control")
+@UserAccessGuard({ organization: true })
+export default class GetMyPermissionsController {
+  @Get("/me/permissions")
+  handle(@Req() req: any) {
+    return { userId: req.user.id, organizationId: req.organizationId }
+  }
+}
+```
+
+:::warning
+L'ordre des décorateurs compte. Raiton exécute la pile du décorateur le plus
+proche de la méthode vers le plus éloigné. Un décorateur posé au-dessus de
+`@UserAccessGuard()` peut donc s'exécuter avant que la session soit résolue.
+Composez l'ordre dans un seul décorateur et couvrez-le par un test
+d'intégration.
+:::
+
 ## Hooks de cycle de vie
 
 Les plugins peuvent enregistrer des hooks plus fins que les middlewares :

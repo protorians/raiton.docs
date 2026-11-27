@@ -97,6 +97,54 @@ Ce qui se passe :
 4. Le serveur écoute sur `port` / `hostname`.
 5. Le scheduler démarre et l'observabilité s'active si elle est configurée.
 
+## Bootstrapper de production
+
+Sur une API réelle, `main.ts` porte aussi la sécurité globale, le composition
+root DI et le démarrage des services de fond. Gardez-le linéaire : une
+constante par sujet, puis une chaîne de `use()` / `register()`.
+
+```ts
+import "reflect-metadata"
+import "@/shared/infrastructure/di/composition-root"
+import { env } from "raiton/framework/env"
+import { Application, Security, RuntimeType, openApiPlugin } from "raiton/framework"
+import type { ThreadInterface } from "raiton/types"
+import { ReminderSchedulerService } from "@/modules/crm/infrastructure/schedulers/reminder-scheduler.service"
+
+export default async (thread: ThreadInterface) => {
+  const isDevelopment = env("NODE_ENV") === "development"
+
+  const app = new Application({
+    port: env<number>("APP_PORT", 5711, "int"),
+    prefix: "/api",
+  })
+    .use(Security.headers)
+    .use(Security.cors({ origin: env("CORS_ORIGIN", "")!.split(","), credentials: true }))
+    .use(Security.rateLimit({ windowMs: 60_000, max: 300 }))
+    .use(Security.bodyLimit(100 * 1024 * 1024))
+    .use(openApiPlugin({ title: "Users API", version: "1.0.0", endpoint: "/docs/json" }))
+
+  // Démarrage explicite d'un service de fond (échec non bloquant).
+  try {
+    await Application.container.resolve(ReminderSchedulerService)
+  } catch (error) {
+    console.error("Scheduler indisponible", error)
+  }
+
+  return await thread.setup({ application: app, runtime: RuntimeType.Bun }).run()
+}
+```
+
+`Application.container` est identique à `Injection`. `resolve(Class)` résout un
+constructeur déjà enregistré par `@Injectable()`, ce qui est le point d'entrée
+naturel pour démarrer un scheduler ou un worker applicatif.
+
+:::tip
+Le détail d'un bootstrapper de production (CORS avec credentials, CSRF ciblé,
+webhooks signés, composition root) est traité dans
+[Architecture d'une API de production](/docs/architecture-production).
+:::
+
 ## Flux d'une requête
 
 ```text

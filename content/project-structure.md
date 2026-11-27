@@ -75,6 +75,9 @@ principaux :
 | `*.scheduler.ts`, `*.task.ts`, `*.cron.ts`, `*.job.ts` | Jobs planifiés | Oui |
 | `*.service.ts` | Service injectable | Via DI |
 | `*.repository.ts` | Dépôt | Via DI |
+| `*.use-case.ts` | Cas d'usage métier | Via DI |
+| `*.dto.ts` | DTO d'entrée | Via DI / import |
+| `*.entity.ts`, `*.model.ts` | Entités et modèles | Via DI / import |
 | `*.middleware.ts` | Middleware | Import manuel |
 | `*.command.ts` | Commande CLI projet | Au chargement du CLI |
 
@@ -111,6 +114,76 @@ source/
 Le scanner est récursif : l'emplacement des fichiers n'a pas d'importance, seul
 le suffixe compte. Une organisation par domaine réduit les allers-retours entre
 dossiers.
+
+## Monolithe modulaire : quand un module grossit
+
+Sur une API de production, un module plat finit par mélanger la règle métier, la
+persistance et HTTP. Découpez alors chaque module en quatre couches :
+
+```text
+source/modules/identity/
+├── domain/                 # entités, ports, enums — aucun import Raiton
+│   ├── entities/
+│   ├── repositories/       # interfaces
+│   └── enums/
+├── application/            # cas d'usage, DTO, services applicatifs
+│   ├── use-cases/
+│   ├── dtos/
+│   └── services/
+├── infrastructure/         # adaptateurs concrets
+│   ├── persistence/        # Prisma, SQL, fichiers
+│   ├── gateways/           # HTTP, e-mail, stockage
+│   ├── security/
+│   └── schedulers/
+└── presentation/           # frontière HTTP
+    ├── controllers/
+    ├── vm/                 # ViewModels de sortie
+    └── middlewares/
+```
+
+La règle de dépendance prime sur le nom des dossiers :
+
+| Couche | Peut dépendre de | Ne doit pas dépendre de |
+|---|---|---|
+| `domain` | TypeScript et types du domaine | Raiton, Prisma, HTTP |
+| `application` | `domain`, ports, services injectables | `Request`, `Reply`, contrôleurs |
+| `infrastructure` | `domain`, SDK externes | `presentation` |
+| `presentation` | `application`, types du domaine | implémentations concrètes |
+
+Un cas d'usage ne reçoit pas `req` : il reçoit des valeurs et lève une erreur
+métier. Le contrôleur traduit l'erreur en statut HTTP. Cette frontière rend le
+métier testable sans serveur et permet de changer de transport sans réécrire les
+règles.
+
+### Le composition root
+
+Le scanner monte les contrôleurs, mais il n'évalue que les fichiers importés.
+Une implémentation `@Injectable()` jamais référencée n'est donc pas enregistrée
+dans le conteneur, et la résolution échoue. Centralisez les imports concrets
+dans un **composition root** importé au tout début de `main.ts` :
+
+```ts
+// source/shared/infrastructure/di/composition-root.ts
+import "@/modules/identity/infrastructure/persistence/prisma-user.repository"
+import "@/modules/identity/application/session-refresh-token.service"
+import "@/modules/organization/infrastructure/persistence/prisma-organization.repository"
+import "@/shared/infrastructure/database/prisma.service"
+```
+
+```ts
+// source/main.ts
+import "reflect-metadata"
+import "@/shared/infrastructure/di/composition-root"
+import { Application } from "raiton/core/application"
+```
+
+Le composition root ne contient que des imports. Il garantit que les
+dépendances des contrôleurs sont connues avant la compilation des routes.
+
+:::tip
+Pour une API réelle, cette organisation est détaillée pas à pas dans
+[Architecture d'une API de production](/docs/architecture-production).
+:::
 
 ## Le bootstrapper reste mince
 

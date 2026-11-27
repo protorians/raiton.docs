@@ -118,6 +118,58 @@ const mailer = Injection.get<MailService>("mailer")
 | `clear()` | Vider le conteneur |
 | `shutdown()` | Appeler `onUnmount()` puis vider |
 
+## Composition root : garantir l'enregistrement
+
+Le scanner monte les contrôleurs, mais il n'évalue que les fichiers réellement
+importés. Une implémentation concrète décorée avec `@Injectable()` mais jamais
+référencée ne s'enregistre pas, et la résolution échoue :
+
+```text
+Dependency PrismaUserRepository not registered
+```
+
+Sur une API modulaire, créez un module de composition qui importe les
+implémentations concrètes, puis importez-le en premier dans `main.ts` :
+
+```ts
+// source/shared/infrastructure/di/composition-root.ts
+import "@/modules/identity/infrastructure/persistence/prisma-user.repository"
+import "@/modules/identity/application/session-refresh-token.service"
+import "@/modules/organization/infrastructure/persistence/prisma-organization.repository"
+import "@/shared/infrastructure/database/prisma.service"
+```
+
+```ts
+// source/main.ts
+import "reflect-metadata"
+import "@/shared/infrastructure/di/composition-root"
+import { Application } from "raiton/core"
+```
+
+Quelques règles :
+
+- importez le composition root **avant** de créer l'`Application` ;
+- quand un service résout une dépendance au démarrage, importez l'adaptateur
+  avant le service ;
+- ne mettez aucune logique dans le composition root, uniquement des imports ;
+- gardez un bloc commenté par domaine pour retrouver l'implémentation.
+
+### Démarrer un service au boot
+
+`Application.container` pointe vers `Injection`. Utilisez `resolve()` pour
+démarrer explicitement un scheduler ou un worker :
+
+```ts
+try {
+  await Application.container.resolve(ReminderSchedulerService)
+} catch (error) {
+  console.error("Scheduler indisponible", error)
+}
+```
+
+Un échec de service de fond ne doit pas empêcher le serveur d'écouter, sauf si
+ce service porte une garantie de sécurité.
+
 ## Cycle de vie des instances
 
 Si une instance expose ces méthodes, le conteneur les appelle :
