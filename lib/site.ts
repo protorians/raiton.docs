@@ -24,7 +24,7 @@ export function asset(pathname: string): string {
 
 export const NAV_LINKS = [
   { href: "/docs", label: "Documentation" },
-  { href: "/docs/6.9/contracts", label: "Contrats" },
-  { href: "/docs/6.9/cli", label: "CLI" },
-  { href: "/docs/6.9/releases", label: "Versions" },
+  { href: "/docs/6.10/contracts", label: "Contrats" },
+  { href: "/docs/6.10/cli", label: "CLI" },
+  { href: "/docs/6.10/releases", label: "Versions" },
 ];

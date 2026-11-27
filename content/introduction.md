@@ -16,7 +16,7 @@ de l'exécution TypeScript directe, du HMR et des artifacts. Les mêmes
 applications tournent sur **Node.js** et **Deno** via des adaptateurs dédiés.
 
 :::note
-Raiton est actuellement publié en **beta** (`6.9.0-beta.26`). L'API publique est
+Raiton est actuellement publié en **beta** (`6.10.0-beta.28`). L'API publique est
 stable, mais des détails peuvent encore évoluer entre deux versions mineures.
 Consultez la [politique de versions](/docs/versioning) avant une mise en production.
 :::

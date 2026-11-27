@@ -1,10 +1,35 @@
 ---
 title: "Notes de version"
-description: "Nouveautés, corrections et points de migration de Raiton 6.9."
+description: "Nouveautés, corrections et points de migration de Raiton 6.10."
 section: versions
 order: 70
 since: "6.0"
 ---
+
+## 6.10.0-beta.28
+
+**27 novembre 2026** · `v6.10.0-beta.28` · [Comparer sur GitHub](https://github.com/protorians/raiton/compare/v6.9.1-beta.27...v6.10.0-beta.28)
+
+La version 6.10 consolide les acquis de la 6.9 et se concentre sur les
+performances.
+
+### Performance
+
+- Routage, pipeline HTTP et démarrage optimisés.
+- Benchmarks ajoutés pour le routage, le pipeline et le démarrage.
+- Budgets de benchmark calibrés sur les runners partagés.
+- Tests de non-régression pour surveiller les performances.
+
+### Consolidation
+
+- Contrats schema-first, manifeste, MCP stdio, observabilité et CLI réunis dans
+  la même release.
+- Aucun changement d'API par rapport à la 6.9.
+
+### Migration depuis 6.9
+
+Aucun changement cassant. Mettez à jour le package `raiton` et la CLI ; le reste
+du code applicatif reste compatible.
 
 ## 6.9.0-beta.26
 
@@ -83,6 +108,7 @@ bun raiton client --out ./sdk
 
 | Version | Point clé |
 |---|---|
+| 6.10 | Performance, benchmarks et consolidation |
 | 6.9 | Contrats, manifeste, MCP stdio, observabilité, CLI |
 | 6.8 | Scheduler et files d'attente |
 | 6.7 | Cache HTTP et ETag |

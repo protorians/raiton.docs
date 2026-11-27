@@ -12,7 +12,7 @@ Raiton suit un versionnement `MAJOR.MINOR.PATCH` avec un suffixe de pré-release
 pendant la beta :
 
 ```text
-6.9.0-beta.26
+6.10.0-beta.28
 │ │ │  │   └─ numéro de build beta
 │ │ │  └───── pré-release
 │ │ └──────── patch
@@ -31,7 +31,8 @@ d'erreur et les contrats publiés restent stables.
 
 | Version | Statut | Documentation |
 |---|---|---|
-| 6.9 | **latest** | [Lire](/docs/6.9) |
+| 6.10 | **latest** | [Lire](/docs/6.10) |
+| 6.9 | archivée | [Lire](/docs/6.9) |
 | 6.8 | archivée | [Lire](/docs/6.8) |
 | 6.7 | archivée | [Lire](/docs/6.7) |
 | 6.6 | archivée | [Lire](/docs/6.6) |
@@ -48,6 +49,13 @@ antérieures.
 - Les codes d'erreur publics ne sont jamais réutilisés.
 
 ## Migration
+
+### 6.9 → 6.10
+
+Aucun changement cassant. La 6.10 est consacrée aux performances : le routage,
+le pipeline HTTP et le démarrage sont plus rapides, avec des benchmarks et des
+tests de non-régression. Les contrats, le manifeste, MCP et l'observabilité
+introduits en 6.9 restent inchangés.
 
 ### 6.8 → 6.9
 

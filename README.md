@@ -56,8 +56,8 @@ Les versions sont déclarées dans `lib/versions.ts` :
 
 ```ts
 export const VERSIONS = [
-  { id: "6.9", label: "v6.9", status: "latest", ... },
-  { id: "6.8", label: "v6.8", status: "archived", ... },
+  { id: "6.10", label: "v6.10", status: "latest", ... },
+  { id: "6.9", label: "v6.9", status: "archived", ... },
 ]
 ```
 

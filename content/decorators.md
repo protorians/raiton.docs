@@ -10,7 +10,7 @@ Tous les décorateurs sont exportés par `raiton/framework`, sauf `@Input` et
 `@Output` qui viennent de `raiton/contracts`.
 
 :::note
-Cette référence couvre la version 6.9. Certains décorateurs sont plus récents
+Cette référence couvre la version 6.10. Certains décorateurs sont plus récents
 que d'autres : `@HealthCheck` (6.6), `@Cache` (6.7), `@Scheduler`, `@Cron`,
 `@Every`, `@Timeout`, `@Task` (6.8), `@Input` et `@Output` (6.9).
 :::

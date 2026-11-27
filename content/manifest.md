@@ -20,7 +20,7 @@ bun raiton inspect --json
 {
   "schemaVersion": "1.0.0",
   "generatedAt": "2026-11-27T10:00:00.000Z",
-  "framework": { "name": "raiton", "version": "6.9.0-beta.26" },
+  "framework": { "name": "raiton", "version": "6.10.0-beta.28" },
   "runtime": "bun",
   "project": {
     "rootDir": "./source",

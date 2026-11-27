@@ -13,10 +13,27 @@ export interface DocVersion {
 
 export const VERSIONS: DocVersion[] = [
   {
+    id: "6.10",
+    label: "v6.10",
+    tag: "v6.10.0-beta.28",
+    status: "latest",
+    released: "27 novembre 2026",
+    headline: "Performance et consolidation",
+    summary:
+      "Raiton 6.10 consolide les contrats schema-first, le manifeste, MCP stdio, l'observabilité et la CLI, avec un routage, un pipeline HTTP et un démarrage plus rapides.",
+    highlights: [
+      "Routage, pipeline HTTP et démarrage optimisés",
+      "Benchmarks et tests de non-régression",
+      "Contrats TypeBox : validation runtime, types, OpenAPI et client généré",
+      "Manifeste versionné, JSON Schema publié et cache HMR",
+      "MCP stdio, observabilité et CLI de diagnostic",
+    ],
+  },
+  {
     id: "6.9",
     label: "v6.9",
     tag: "v6.9.0-beta.26",
-    status: "latest",
+    status: "archived",
     released: "27 novembre 2026",
     headline: "Contrats, manifeste et MCP stdio",
     summary:

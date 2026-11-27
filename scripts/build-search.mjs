@@ -5,7 +5,7 @@ import matter from "gray-matter";
 const root = process.cwd();
 const contentDir = path.join(root, "content");
 const overridesDir = path.join(contentDir, "versions");
-const latest = "6.9";
+const latest = "6.10";
 
 function walkText(markdown) {
   return markdown
