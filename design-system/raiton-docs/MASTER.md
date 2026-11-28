@@ -1,54 +1,56 @@
 # Raiton Docs — Master design system
 
-**Direction:** Night observatory. One continuous night, lit per chapter.
+**Direction:** Ember rose. One continuous room, warm light per chapter.
 **Reference:** `murowallpaper.com` (fixed sky, floating glass instrument bar,
 dimensional code window, restrained motion).
 **Product:** technical documentation and framework landing, French, dark-first,
-light as a daylight reading of the same room.
+light as a warm daylight reading of the same room.
 
 ## 1. Palette
+
+Colours are sampled from the logo: hot pink, coral, peach, cream and a dark
+plum-brown ink.
 
 ### Night (default)
 
 | Role | Value | Token |
 |---|---|---|
-| Canvas | `#05070d` | `--bg` |
-| Raised canvas | `#080c16` | `--bg-soft` |
-| Sunken canvas | `#03050a` | `--bg-deep` |
-| Panel (glass) | `rgba(16,20,32,.62)` | `--panel` |
-| Panel solid | `#0a0e1a` | `--panel-solid` |
-| Ink | `#eef1f8` | `--fg` |
-| Ink soft | `#c8cfdd` | `--fg-soft` |
-| Muted | `#98a1b4` | `--muted` |
-| Faint | `#828aa0` | `--faint` |
-| Accent (ice) | `#a9c4ff` | `--accent` |
-| Accent high | `#c7d8ff` | `--accent-hi` |
-| Accent text | `#c3d6ff` | `--accent-strong` |
-| Accent ink | `#08101f` | `--accent-ink` |
-| Border | `rgba(255,255,255,.1)` | `--border` |
-| Border strong | `rgba(255,255,255,.18)` | `--border-strong` |
-| Code surface | `#04060c` | `--code-bg` |
-| Violet light | `#7b4dff` | secondary |
-| Blue light | `#3f7bff` | secondary |
-| Teal light | `#4fd6c9` | secondary |
-| Mint (success) | `#7de8a8` | `--mint` |
-| Rose (brand warmth) | `#ff8fa5` | `--rose` |
+| Canvas | `#000000` | `--bg` |
+| Raised canvas | `#0d0709` | `--bg-soft` |
+| Sunken canvas | `#000000` | `--bg-deep` |
+| Panel (glass) | `rgba(28,17,21,.62)` | `--panel` |
+| Panel solid | `#140c0f` | `--panel-solid` |
+| Ink | `#fff6f2` | `--fg` |
+| Ink soft | `#ecdad6` | `--fg-soft` |
+| Muted | `#b9a3a6` | `--muted` |
+| Faint | `#9c878c` | `--faint` |
+| Accent (rose) | `#f15a81` | `--accent` |
+| Accent high | `#ff8fa8` | `--accent-hi` |
+| Accent text | `#ff9db0` | `--accent-strong` |
+| Accent ink | `#2c0e17` | `--accent-ink` |
+| Border | `rgba(255,230,235,.1)` | `--border` |
+| Border strong | `rgba(255,230,235,.18)` | `--border-strong` |
+| Code surface | `#0b0508` | `--code-bg` |
+| Peach light | `#f4caa4` | secondary |
+| Deep rose | `#d02a58` | secondary |
+| Mint (success) | `#86e0a8` | `--mint` |
+| Coral (brand) | `#f15a81` | `--rose` |
 
 ### Daylight
 
 | Role | Value |
 |---|---|
-| Canvas | `#f5f7fc` |
-| Raised | `#eef2fb` |
-| Panel | `rgba(255,255,255,.82)` |
-| Ink | `#0a0f1c` |
-| Muted | `#5c677d` |
-| Faint | `#5f6a7c` |
-| Accent | `#2f5dd0` |
-| Accent text | `#2447b8` |
+| Canvas | `#fdf6f2` |
+| Raised | `#fbebe6` |
+| Panel | `rgba(255,250,247,.85)` |
+| Ink | `#2a1218` |
+| Muted | `#75535c` |
+| Faint | `#7a5b63` |
+| Accent | `#d02a58` |
+| Accent text | `#b31545` |
 | Accent ink | `#ffffff` |
-| Border | `#dfe6f4` |
-| Border strong | `#cbd6ea` |
+| Border | `#f0dcd6` |
+| Border strong | `#e5c8c0` |
 
 **Rule:** code is always a night surface, in both themes. Never invert the code
 window to a light card.
@@ -78,10 +80,10 @@ Scale reference:
 - `.glass-window`: `#101522 → #080b13`, white 14% border, deep double shadow.
 - `.nav-glass`: 28/33/48 gradient with blur 22px and saturate 160%; pointer light
   at `--nx`.
-- `.spotlight`: 340px radial pointer light at `--px/--py`, 13% ice.
-- Halo/orb: radial ice blue sphere, inset shadows, no neon.
-- The fixed `.atmosphere` carries the star canvas, two aurora blooms and a grain
-  layer. It never moves between chapters.
+- `.spotlight`: 340px radial pointer light at `--px/--py`, 15% peach.
+- Halo/orb: radial rose-peach sphere, inset shadows, no neon.
+- The fixed `.atmosphere` carries the star canvas, two aurora blooms (rose and
+  peach) and a grain layer. It never moves between chapters.
 
 ## 4. Geometry
 
@@ -108,9 +110,9 @@ Scale reference:
 
 - **Header:** floating glass bar, brand app-icon tile, centre tab pill with a
   sliding active pill, compact search / version / theme / GitHub cluster.
-- **Buttons:** pill, 44px (34 small, 50 large). Primary is ice gradient with dark
-  ink; glass is translucent with a 1px border. The button never lifts; press
-  moves 1px.
+- **Buttons:** pill, 44px (34 small, 50 large). Primary is a rose gradient with
+  dark plum ink; glass is translucent with a 1px border. The button never lifts;
+  press moves 1px.
 - **Chips:** mono 10-11px, 1px border, glass fill, used for versions and metadata.
 - **Cards:** glass, optional spotlight, 2xl radius. Hover changes border/colour,
   not layout.
@@ -118,17 +120,17 @@ Scale reference:
   syntax in both themes; horizontal scroll for long lines.
 - **Docs prose:** 15px/1.8, accent underlined links, callouts with a 2px left
   rule, tables with glass header, inline code pill.
-- **Sidebar:** glass support card, mono section labels, active item has an ice
+- **Sidebar:** glass support card, mono section labels, active item has a rose
   left bar and tinted fill.
-- **TOC:** 1px rail, active item gets an ice dot and accent text.
-- **Search:** frosted modal, solid panel, glass rows, ice highlight, keyboard
+- **TOC:** 1px rail, active item gets a rose dot and accent text.
+- **Search:** frosted modal, solid panel, glass rows, rose highlight, keyboard
   hints in the footer.
 - **Footer:** giant outlined wordmark, four columns, mono headings.
 
 ## 7. Accessibility
 
-- Body text contrast ≥ 4.5:1 in both themes. Measured samples: dark muted 7.76,
-  dark faint 5.84, light muted 5.31, light faint 5.10, light accent 5.45.
+- Body text contrast ≥ 4.5:1 in both themes. Measured samples: dark muted 8.85,
+  dark faint 6.26, light muted 6.24, light faint 5.61, light accent 4.73.
 - Focus ring: 2px accent, 3px offset, 10px radius.
 - Touch targets: 40px header controls, 44px primary actions, 36px minimum links.
 - One `h1` per page; headings in order; decorative icons `aria-hidden`.
@@ -138,7 +140,8 @@ Scale reference:
 
 ## 8. Anti-patterns
 
-- No coral/peach page background, no white paper panels in dark mode.
+- No page background outside the warm family: night is true black, daylight is
+  blush cream. No blue or violet accent leftovers.
 - No gradient text, neon glow or zero-offset coloured halos.
 - No section counters, scroll cues, or "scroll to explore" nudges.
 - No full-frame dark overlay to fix contrast; scrim only where text sits.

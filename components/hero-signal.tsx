@@ -60,10 +60,10 @@ export function HeroSignal() {
     <div className="glass relative overflow-hidden rounded-[26px] p-5 sm:p-7">
       <div
         className="pointer-events-none absolute -right-24 -top-32 h-72 w-72 rounded-full blur-3xl"
-        style={{ background: "rgba(63,123,255,.18)" }}
+        style={{ background: "rgba(241,90,129,.18)" }}
         aria-hidden
       />
-      <div className="pointer-events-none absolute -bottom-32 -left-24 h-64 w-64 rounded-full bg-[rgba(123,77,255,.14)] blur-3xl" aria-hidden />
+      <div className="pointer-events-none absolute -bottom-32 -left-24 h-64 w-64 rounded-full bg-[rgba(244,202,164,.16)] blur-3xl" aria-hidden />
 
       <div className="relative flex items-start justify-between gap-4">
         <div className="min-w-0">
@@ -110,9 +110,9 @@ export function HeroSignal() {
                 <span
                   className={`relative block h-[13px] w-[13px] rounded-full border transition-[background-color,border-color,box-shadow] duration-300 ${
                     isActive
-                      ? "border-[var(--accent)] bg-[var(--accent)] shadow-[0_0_0_5px_rgba(169,196,255,.16),0_0_18px_rgba(169,196,255,.7)]"
+                      ? "border-[var(--accent)] bg-[var(--accent)] shadow-[0_0_0_5px_rgba(241,90,129,.18),0_0_18px_rgba(241,90,129,.65)]"
                       : isPast
-                        ? "border-[rgba(169,196,255,.5)] bg-[rgba(169,196,255,.5)]"
+                        ? "border-[rgba(241,90,129,.5)] bg-[rgba(241,90,129,.5)]"
                         : "border-[var(--border-strong)] bg-[var(--bg)] group-hover:border-[var(--accent)]"
                   }`}
                 />

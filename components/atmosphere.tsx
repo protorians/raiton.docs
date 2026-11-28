@@ -62,7 +62,7 @@ export function Atmosphere() {
         const x = star.x + pointer.x * star.depth * 14;
         const y = star.y + pointer.y * star.depth * 14;
         context.beginPath();
-        context.fillStyle = `rgba(206, 222, 255, ${star.alpha * twinkle})`;
+        context.fillStyle = `rgba(255, 226, 214, ${star.alpha * twinkle})`;
         context.arc(x, y, star.r, 0, Math.PI * 2);
         context.fill();
       }

@@ -4,29 +4,54 @@ import { Github, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { Logo } from "@/components/logo";
 import { SearchDialog } from "@/components/search-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { VersionSwitcher } from "@/components/version-switcher";
+import {
+  getLocaleFromPathname,
+  getMessages,
+  localizePath,
+  stripLocale,
+} from "@/lib/i18n";
 import { SITE } from "@/lib/site";
-import { LATEST_VERSION } from "@/lib/versions";
-
-const v = LATEST_VERSION.id;
-
-const LINKS = [
-  { href: "/docs", label: "Documentation", match: "/docs" },
-  { href: `/docs/${v}/quickstart`, label: "Démarrage", match: "/quickstart" },
-  { href: `/docs/${v}/decorators`, label: "Référence", match: "/decorators" },
-  { href: `/docs/${v}/releases`, label: "Versions", match: "/releases" },
-];
+import { getLatestVersion } from "@/lib/versions";
 
 export function SiteHeader() {
   const pathname = usePathname() ?? "/";
-  const clean = pathname.replace(/^\/docs\/\d+\.\d+/, "/docs").replace(/\/+$/, "");
+  const locale = getLocaleFromPathname(pathname);
+  const messages = getMessages(locale);
+  const v = getLatestVersion(locale).id;
+  const bare = stripLocale(pathname);
+  const clean = bare.replace(/^\/docs\/\d+\.\d+/, "/docs").replace(/\/+$/, "");
   const [open, setOpen] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
   const linkRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
   const [pill, setPill] = useState({ left: 0, width: 0, opacity: 0 });
+
+  const LINKS = [
+    {
+      href: localizePath(locale, "/docs"),
+      label: messages.header.links.documentation,
+      match: "/docs",
+    },
+    {
+      href: localizePath(locale, `/docs/${v}/quickstart`),
+      label: messages.header.links.quickstart,
+      match: "/quickstart",
+    },
+    {
+      href: localizePath(locale, `/docs/${v}/decorators`),
+      label: messages.header.links.reference,
+      match: "/decorators",
+    },
+    {
+      href: localizePath(locale, `/docs/${v}/releases`),
+      label: messages.header.links.versions,
+      match: "/releases",
+    },
+  ];
 
   useEffect(() => setOpen(false), [pathname]);
 
@@ -34,11 +59,11 @@ export function SiteHeader() {
     if (link.match === "/docs") {
       if (clean === "/docs") return true;
       return (
-        pathname.startsWith("/docs/") &&
-        !LINKS.slice(1).some((item) => pathname.includes(item.match))
+        bare.startsWith("/docs/") &&
+        !LINKS.slice(1).some((item) => bare.includes(item.match))
       );
     }
-    return pathname.includes(link.match);
+    return bare.includes(link.match);
   };
 
   useEffect(() => {
@@ -63,6 +88,8 @@ export function SiteHeader() {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("resize", measure);
     };
+    // The measurement only depends on the active pathname.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   return (
@@ -71,11 +98,18 @@ export function SiteHeader() {
         data-nav-light
         className="nav-glass mx-auto grid h-[58px] w-full max-w-[1240px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-[20px] px-2 py-1.5 pl-2.5 sm:h-[60px] sm:px-2.5"
       >
-        <Link href="/" className="min-w-0 justify-self-start overflow-hidden" aria-label="Raiton, accueil">
+        <Link
+          href={localizePath(locale, "/")}
+          className="min-w-0 justify-self-start overflow-hidden"
+          aria-label={messages.header.homeAria}
+        >
           <Logo />
         </Link>
 
-        <nav className="hidden items-center justify-self-center md:flex" aria-label="Navigation principale">
+        <nav
+          className="hidden items-center justify-self-center md:flex"
+          aria-label={messages.header.mainNavAria}
+        >
           <div
             ref={navRef}
             className="nav-inset relative flex items-center gap-0.5 rounded-full border border-[var(--border)] p-1"
@@ -108,6 +142,7 @@ export function SiteHeader() {
 
         <div className="flex items-center justify-self-end gap-1">
           <SearchDialog />
+          <LanguageSwitcher />
           <div className="hidden xl:block">
             <VersionSwitcher />
           </div>
@@ -117,7 +152,7 @@ export function SiteHeader() {
             target="_blank"
             rel="noreferrer"
             className="icon-btn hidden lg:inline-flex"
-            aria-label="Raiton sur GitHub"
+            aria-label={messages.header.githubAria}
           >
             <Github className="h-[17px] w-[17px]" />
           </a>
@@ -125,7 +160,7 @@ export function SiteHeader() {
             type="button"
             className="icon-btn md:hidden"
             onClick={() => setOpen((value) => !value)}
-            aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
+            aria-label={open ? messages.header.closeMenu : messages.header.openMenu}
             aria-expanded={open}
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -135,7 +170,7 @@ export function SiteHeader() {
 
       {open && (
         <div className="nav-glass mx-auto mt-2 w-full max-w-[1240px] rounded-[20px] p-3 md:hidden">
-          <nav className="mt-1 grid gap-1" aria-label="Navigation mobile">
+          <nav className="mt-1 grid gap-1" aria-label={messages.header.mobileNavAria}>
             {LINKS.map((link) => (
               <Link
                 key={link.href}
@@ -149,9 +184,15 @@ export function SiteHeader() {
           </nav>
           <div className="mt-2 flex items-center justify-between border-t border-[var(--border)] px-1 pt-3">
             <span className="font-mono text-[10px] uppercase tracking-[0.13em] text-[var(--faint)]">
-              Version
+              {messages.common.version}
             </span>
             <VersionSwitcher compact />
+          </div>
+          <div className="mt-2 flex items-center justify-between border-t border-[var(--border)] px-1 pt-3">
+            <span className="font-mono text-[10px] uppercase tracking-[0.13em] text-[var(--faint)]">
+              {messages.common.language}
+            </span>
+            <LanguageSwitcher compact />
           </div>
           <a
             href={SITE.github}
@@ -159,7 +200,7 @@ export function SiteHeader() {
             rel="noreferrer"
             className="nav-hover mt-2 flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13.5px] text-[var(--fg-soft)]"
           >
-            <Github className="h-4 w-4" /> GitHub
+            <Github className="h-4 w-4" /> {messages.common.github}
           </a>
         </div>
       )}

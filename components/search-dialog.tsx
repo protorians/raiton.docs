@@ -4,8 +4,19 @@ import { Search, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import {
+  getLocaleFromPathname,
+  getMessages,
+  interpolate,
+  localizePath,
+} from "@/lib/i18n";
 import { asset } from "@/lib/site";
-import { VERSIONS, getVersionOrLatest, isSince } from "@/lib/versions";
+import {
+  getSectionLabel,
+  getVersionOrLatest,
+  getVersions,
+  isSince,
+} from "@/lib/versions";
 
 interface SearchEntry {
   slug: string;
@@ -39,7 +50,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, index)}
-      <mark className="rounded-sm bg-[rgba(169,196,255,.24)] px-0.5 text-inherit">
+      <mark className="rounded-sm bg-[rgba(241,90,129,.28)] px-0.5 text-inherit">
         {text.slice(index, index + query.length)}
       </mark>
       {text.slice(index + query.length)}
@@ -49,7 +60,12 @@ function Highlight({ text, query }: { text: string; query: string }) {
 
 export function SearchDialog() {
   const pathname = usePathname() ?? "/docs";
-  const version = getVersionOrLatest(pathname.match(/\/docs\/(\d+\.\d+)/)?.[1]);
+  const locale = getLocaleFromPathname(pathname);
+  const messages = getMessages(locale);
+  const version = getVersionOrLatest(
+    pathname.match(/\/docs\/(\d+\.\d+)/)?.[1],
+    locale,
+  );
 
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -84,14 +100,19 @@ export function SearchDialog() {
   }, [open]);
 
   useEffect(() => {
+    setEntries([]);
+  }, [locale]);
+
+  useEffect(() => {
     if (!open || entries.length > 0) return;
     setLoading(true);
-    fetch(asset("/search-index.json"))
+    const index = locale === "en" ? "/search-index.en.json" : "/search-index.json";
+    fetch(asset(index))
       .then((response) => (response.ok ? response.json() : []))
       .then((data: SearchEntry[]) => setEntries(Array.isArray(data) ? data : []))
       .catch(() => setEntries([]))
       .finally(() => setLoading(false));
-  }, [open, entries.length]);
+  }, [open, entries.length, locale]);
 
   const results = useMemo(() => {
     const sorted = query.trim()
@@ -111,10 +132,13 @@ export function SearchDialog() {
       const entry = results[index];
       if (!entry) return;
       setOpen(false);
-      const target = isSince(entry.since, version.id) ? version.id : VERSIONS[0].id;
-      window.location.assign(asset(`/docs/${target}/${entry.slug}/`));
+      const target = isSince(entry.since, version.id)
+        ? version.id
+        : getVersions(locale)[0].id;
+      const pathname = localizePath(locale, `/docs/${target}/${entry.slug}/`);
+      window.location.assign(asset(pathname));
     },
-    [results, version.id],
+    [locale, results, version.id],
   );
 
   function onInputKey(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -138,10 +162,12 @@ export function SearchDialog() {
         type="button"
         onClick={() => setOpen(true)}
         className="group inline-flex h-10 w-10 items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-[rgba(255,255,255,.05)] pl-0 pr-0 text-[12.5px] text-[var(--muted)] transition-colors hover:border-[var(--accent)] hover:text-[var(--fg)] lg:h-9 lg:w-auto lg:justify-start lg:pl-3 lg:pr-2 lg:min-w-[220px]"
-        aria-label="Rechercher dans la documentation"
+        aria-label={messages.search.buttonAria}
       >
         <Search className="h-3.5 w-3.5" />
-        <span className="hidden flex-1 text-left lg:inline">Rechercher…</span>
+        <span className="hidden flex-1 text-left lg:inline">
+          {messages.search.buttonLabel}
+        </span>
         <span className="kbd ml-auto hidden lg:inline-flex">⌘K</span>
       </button>
 
@@ -149,7 +175,7 @@ export function SearchDialog() {
         open &&
         createPortal(
           <div
-            className="fixed inset-0 z-[200] flex items-start justify-center bg-[rgba(2,4,10,.68)] px-4 pt-[10vh] backdrop-blur-md"
+            className="fixed inset-0 z-[200] flex items-start justify-center bg-[rgba(5,1,3,.7)] px-4 pt-[10vh] backdrop-blur-md"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) setOpen(false);
             }}
@@ -157,7 +183,7 @@ export function SearchDialog() {
             <div
               role="dialog"
               aria-modal="true"
-              aria-label="Recherche dans la documentation"
+              aria-label={messages.search.dialogAria}
               className="w-full max-w-[640px] overflow-hidden rounded-[22px] border border-[var(--border-strong)] bg-[var(--panel-solid)] shadow-[inset_0_1px_0_rgba(255,255,255,.1),0_50px_140px_-30px_rgba(0,0,0,.95)]"
             >
               <div className="flex items-center gap-3 border-b border-[var(--border)] px-4">
@@ -167,14 +193,16 @@ export function SearchDialog() {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   onKeyDown={onInputKey}
-                  placeholder={`Rechercher dans la documentation ${version.label}…`}
+                  placeholder={interpolate(messages.search.placeholder, {
+                    version: version.label,
+                  })}
                   className="h-14 w-full bg-transparent text-[14px] text-[var(--fg)] outline-none placeholder:text-[var(--faint)]"
                 />
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
                   className="icon-btn h-7 w-7"
-                  aria-label="Fermer la recherche"
+                  aria-label={messages.search.closeAria}
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -183,19 +211,19 @@ export function SearchDialog() {
               <div className="max-h-[min(62vh,470px)] overflow-y-auto p-2">
                 {loading && (
                   <p className="px-3 py-6 text-center text-[13px] text-[var(--muted)]">
-                    Chargement de l&apos;index…
+                    {messages.search.loading}
                   </p>
                 )}
 
                 {!loading && results.length === 0 && (
                   <p className="px-3 py-8 text-center text-[13px] text-[var(--muted)]">
-                    Aucun résultat pour « {query} ».
+                    {interpolate(messages.search.noResults, { query })}
                   </p>
                 )}
 
                 {!loading && results.length > 0 && (
                   <p className="px-3 pb-1.5 pt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--faint)]">
-                    {query.trim() ? "Résultats" : "Pages suggérées"}
+                    {query.trim() ? messages.search.results : messages.search.suggested}
                   </p>
                 )}
 
@@ -212,7 +240,7 @@ export function SearchDialog() {
                     }`}
                   >
                     <span className="mt-0.5 rounded-md border border-[var(--border)] bg-[var(--panel)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.09em] text-[var(--muted)]">
-                      {entry.section}
+                      {getSectionLabel(entry.section, locale)}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[13.5px] font-medium text-[var(--fg)]">
@@ -235,11 +263,11 @@ export function SearchDialog() {
                 <span className="flex items-center gap-1">
                   <span className="kbd h-5">↑</span>
                   <span className="kbd h-5">↓</span>
-                  naviguer
+                  {messages.search.navigate}
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="kbd h-5">↵</span>
-                  ouvrir
+                  {messages.search.open}
                 </span>
                 <span className="ml-auto font-mono">{version.label}</span>
               </div>

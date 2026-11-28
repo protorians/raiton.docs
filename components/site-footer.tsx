@@ -1,45 +1,82 @@
+"use client";
+
 import { Github, Heart } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Logo } from "@/components/logo";
-import { LATEST_VERSION } from "@/lib/versions";
-import { SITE } from "@/lib/site";
-
-const v = LATEST_VERSION.id;
-
-const columns = [
-  {
-    title: "Documentation",
-    links: [
-      { href: "/docs", label: "Vue d’ensemble" },
-      { href: `/docs/${v}/quickstart`, label: "Démarrage rapide" },
-      { href: `/docs/${v}/contracts`, label: "Contrats" },
-      { href: `/docs/${v}/mcp`, label: "MCP" },
-      { href: `/docs/${v}/cli`, label: "CLI" },
-    ],
-  },
-  {
-    title: "Référence",
-    links: [
-      { href: `/docs/${v}/decorators`, label: "Décorateurs" },
-      { href: `/docs/${v}/core-api`, label: "API core" },
-      { href: `/docs/${v}/configuration`, label: "Configuration" },
-      { href: `/docs/${v}/types`, label: "Types" },
-      { href: `/docs/${v}/errors`, label: "Erreurs" },
-    ],
-  },
-  {
-    title: "Ressources",
-    links: [
-      { href: `/docs/${v}/releases`, label: `Notes ${LATEST_VERSION.label}` },
-      { href: `/docs/${v}/versioning`, label: "Politique de versions" },
-      { href: `/docs/${v}/deployment`, label: "Déploiement" },
-      { href: `/docs/${v}/testing`, label: "Tests" },
-      { href: `/docs/${v}/contributing`, label: "Contribuer" },
-    ],
-  },
-];
+import {
+  getLocaleFromPathname,
+  getMessages,
+  interpolate,
+  localizePath,
+} from "@/lib/i18n";
+import { SITE, getSiteCopy } from "@/lib/site";
+import { getLatestVersion } from "@/lib/versions";
 
 export function SiteFooter() {
+  const pathname = usePathname() ?? "/";
+  const locale = getLocaleFromPathname(pathname);
+  const messages = getMessages(locale);
+  const copy = getSiteCopy(locale);
+  const latest = getLatestVersion(locale);
+  const v = latest.id;
+
+  const columns = [
+    {
+      title: messages.footer.columns.documentation,
+      links: [
+        { href: "/docs", label: messages.footer.links.overview },
+        {
+          href: `/docs/${v}/quickstart`,
+          label: messages.footer.links.quickstart,
+        },
+        { href: `/docs/${v}/contracts`, label: messages.footer.links.contracts },
+        { href: `/docs/${v}/mcp`, label: messages.footer.links.mcp },
+        { href: `/docs/${v}/cli`, label: messages.footer.links.cli },
+      ],
+    },
+    {
+      title: messages.footer.columns.reference,
+      links: [
+        {
+          href: `/docs/${v}/decorators`,
+          label: messages.footer.links.decorators,
+        },
+        { href: `/docs/${v}/core-api`, label: messages.footer.links.coreApi },
+        {
+          href: `/docs/${v}/configuration`,
+          label: messages.footer.links.configuration,
+        },
+        { href: `/docs/${v}/types`, label: messages.footer.links.types },
+        { href: `/docs/${v}/errors`, label: messages.footer.links.errors },
+      ],
+    },
+    {
+      title: messages.footer.columns.resources,
+      links: [
+        {
+          href: `/docs/${v}/releases`,
+          label: interpolate(messages.footer.links.releases, {
+            version: latest.label,
+          }),
+        },
+        {
+          href: `/docs/${v}/versioning`,
+          label: messages.footer.links.versioning,
+        },
+        {
+          href: `/docs/${v}/deployment`,
+          label: messages.footer.links.deployment,
+        },
+        { href: `/docs/${v}/testing`, label: messages.footer.links.testing },
+        {
+          href: `/docs/${v}/contributing`,
+          label: messages.footer.links.contributing,
+        },
+      ],
+    },
+  ];
+
   return (
     <footer className="site-footer relative mt-6 border-t border-[var(--border)]">
       <div className="site-container pb-10 pt-12">
@@ -52,11 +89,11 @@ export function SiteFooter() {
 
         <div className="relative grid gap-10 border-t border-[var(--border)] pt-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div>
-            <Link href="/" aria-label="Raiton, accueil">
+            <Link href={localizePath(locale, "/")} aria-label={messages.header.homeAria}>
               <Logo />
             </Link>
             <p className="mt-4 max-w-xs text-[13px] leading-relaxed text-[var(--muted)]">
-              {SITE.tagline} Optimisé pour Bun, compatible Node.js et Deno.
+              {copy.tagline} {messages.footer.taglineSuffix}
             </p>
             <div className="mt-5 flex items-center gap-2">
               <a
@@ -65,7 +102,7 @@ export function SiteFooter() {
                 rel="noreferrer"
                 className="chip transition-colors hover:border-[var(--accent)] hover:text-[var(--accent-strong)]"
               >
-                <Github className="h-3.5 w-3.5" /> GitHub
+                <Github className="h-3.5 w-3.5" /> {messages.common.github}
               </a>
               <a
                 href={SITE.npm}
@@ -75,7 +112,7 @@ export function SiteFooter() {
               >
                 npm
               </a>
-              <span className="chip font-mono">{LATEST_VERSION.tag}</span>
+              <span className="chip font-mono">{latest.tag}</span>
             </div>
           </div>
 
@@ -88,7 +125,7 @@ export function SiteFooter() {
                 {column.links.map((link) => (
                   <li key={link.href}>
                     <Link
-                      href={link.href}
+                      href={localizePath(locale, link.href)}
                       className="text-[13px] text-[var(--muted)] transition-colors hover:text-[var(--accent-strong)]"
                     >
                       {link.label}
@@ -102,10 +139,13 @@ export function SiteFooter() {
 
         <div className="mt-10 flex flex-col items-start justify-between gap-3 border-t border-[var(--border)] pt-6 text-[12px] text-[var(--faint)] sm:flex-row sm:items-center">
           <p>
-            © {new Date().getFullYear()} {SITE.fullName}. Licence {SITE.license}.
+            © {new Date().getFullYear()} {SITE.fullName}.{" "}
+            {interpolate(messages.footer.license, { license: SITE.license })}
           </p>
           <p className="flex items-center gap-1.5">
-            Conçu avec <Heart className="h-3.5 w-3.5 text-[var(--rose)]" /> par {SITE.author}
+            {messages.footer.designedWith}{" "}
+            <Heart className="h-3.5 w-3.5 text-[var(--rose)]" />{" "}
+            {messages.footer.by} {SITE.author}
           </p>
         </div>
       </div>

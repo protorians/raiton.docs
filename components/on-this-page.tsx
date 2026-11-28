@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { getMessages, type Locale } from "@/lib/i18n";
 
 export interface TocItem {
   id: string;
@@ -8,7 +9,13 @@ export interface TocItem {
   depth: number;
 }
 
-export function OnThisPage({ entries }: { entries: TocItem[] }) {
+export function OnThisPage({
+  entries,
+  locale,
+}: {
+  entries: TocItem[];
+  locale: Locale;
+}) {
   const [active, setActive] = useState<string>(entries[0]?.id ?? "");
 
   const ids = useMemo(() => entries.map((entry) => entry.id), [entries]);
@@ -52,10 +59,12 @@ export function OnThisPage({ entries }: { entries: TocItem[] }) {
 
   if (entries.length === 0) return null;
 
+  const messages = getMessages(locale);
+
   return (
-    <nav aria-label="Sur cette page" className="text-[13px]">
+    <nav aria-label={messages.docs.onThisPage} className="text-[13px]">
       <p className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--faint)]">
-        Sur cette page
+        {messages.docs.onThisPage}
       </p>
       <ul className="space-y-0.5 border-l border-[var(--border)]">
         {entries.map((entry) => (

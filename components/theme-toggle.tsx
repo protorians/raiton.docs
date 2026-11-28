@@ -2,8 +2,12 @@
 
 import { Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
+import { getMessages } from "@/lib/i18n";
+import { useLocale } from "@/lib/i18n-client";
 
 export function ThemeToggle() {
+  const locale = useLocale();
+  const messages = getMessages(locale);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -24,8 +28,8 @@ export function ThemeToggle() {
       type="button"
       onClick={toggle}
       className="icon-btn"
-      aria-label="Basculer le thème clair/sombre"
-      title="Thème clair / sombre"
+      aria-label={messages.header.themeToggle}
+      title={messages.header.themeTitle}
     >
       {mounted ? (
         <>
