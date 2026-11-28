@@ -1,13 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
+import { DEFAULT_LOCALE, type Locale } from "./i18n";
 import { renderMarkdown, type RenderResult, type TocEntry } from "./markdown";
 import { BASE_PATH } from "./site";
 import {
-  SECTION_META,
-  SECTION_ORDER,
+  getLatestVersion,
+  getSectionMeta,
+  getVersions,
   isSince,
-  VERSIONS,
+  SECTION_ORDER,
   type DocVersion,
 } from "./versions";
 
@@ -20,6 +22,8 @@ export interface DocMeta {
   since: string;
   tags: string[];
   draft: boolean;
+  /** True when the page has content in the requested locale. */
+  translated: boolean;
 }
 
 export interface DocPage extends DocMeta {
@@ -37,6 +41,10 @@ export interface NavSection {
 
 const CONTENT_DIR = path.join(process.cwd(), "content");
 const OVERRIDES_DIR = path.join(CONTENT_DIR, "versions");
+const LOCALIZED_DIRS: Record<Locale, string> = {
+  fr: CONTENT_DIR,
+  en: path.join(CONTENT_DIR, "en"),
+};
 const renderCache = process.env.NODE_ENV === "production" ? new Map<string, RenderResult>() : null;
 
 function isDirectory(directory: string): boolean {
@@ -47,7 +55,15 @@ function isDirectory(directory: string): boolean {
   }
 }
 
-function readMeta(file: string, slug: string): DocMeta {
+function markdownFiles(directory: string): string[] {
+  if (!isDirectory(directory)) return [];
+  return fs
+    .readdirSync(directory)
+    .filter((file) => file.endsWith(".md"))
+    .sort();
+}
+
+function readMeta(file: string, slug: string, translated: boolean): DocMeta {
   const raw = fs.readFileSync(file, "utf8");
   const { data } = matter(raw);
 
@@ -60,24 +76,54 @@ function readMeta(file: string, slug: string): DocMeta {
     since: data.since ? String(data.since) : "6.0",
     tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
     draft: data.draft === true,
+    translated,
   };
 }
 
-function sharedFiles(): string[] {
-  if (!isDirectory(CONTENT_DIR)) return [];
-  return fs
-    .readdirSync(CONTENT_DIR)
-    .filter((file) => file.endsWith(".md"))
-    .sort();
+/**
+ * Shared French sources, plus English pages that may not exist in French yet.
+ * Locale pages fall back to the French source when no translation exists.
+ */
+function sharedFiles(locale: Locale): string[] {
+  const files = new Set(markdownFiles(CONTENT_DIR));
+  if (locale !== DEFAULT_LOCALE) {
+    for (const file of markdownFiles(LOCALIZED_DIRS[locale])) {
+      files.add(file);
+    }
+  }
+  return [...files].sort();
 }
 
-function overrideFile(version: string, slug: string): string | null {
-  const file = path.join(OVERRIDES_DIR, version, `${slug}.md`);
-  return fs.existsSync(file) ? file : null;
+function firstExisting(...candidates: string[]): string | null {
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return null;
 }
 
-function resolveFile(version: string, slug: string): string | null {
-  return overrideFile(version, slug) ?? path.join(CONTENT_DIR, `${slug}.md`);
+function resolveFile(locale: Locale, version: string, slug: string): string | null {
+  const shared = path.join(CONTENT_DIR, `${slug}.md`);
+
+  if (locale === DEFAULT_LOCALE) {
+    return firstExisting(
+      path.join(OVERRIDES_DIR, version, `${slug}.md`),
+      shared,
+    );
+  }
+
+  const localized = LOCALIZED_DIRS[locale];
+  return firstExisting(
+    path.join(localized, "versions", version, `${slug}.md`),
+    path.join(localized, `${slug}.md`),
+    path.join(OVERRIDES_DIR, version, `${slug}.md`),
+    shared,
+  );
+}
+
+function isTranslatedFile(locale: Locale, file: string): boolean {
+  if (locale === DEFAULT_LOCALE) return true;
+  const localized = `${LOCALIZED_DIRS[locale]}${path.sep}`;
+  return file.startsWith(localized);
 }
 
 function sectionRank(section: string): number {
@@ -85,14 +131,14 @@ function sectionRank(section: string): number {
   return index === -1 ? SECTION_ORDER.length : index;
 }
 
-export function listDocs(version: string): DocMeta[] {
+export function listDocs(version: string, locale: Locale = DEFAULT_LOCALE): DocMeta[] {
   const docs: DocMeta[] = [];
 
-  for (const file of sharedFiles()) {
+  for (const file of sharedFiles(locale)) {
     const slug = file.replace(/\.md$/, "");
-    const shared = path.join(CONTENT_DIR, file);
-    const fileToRead = overrideFile(version, slug) ?? shared;
-    const meta = readMeta(fileToRead, slug);
+    const fileToRead = resolveFile(locale, version, slug);
+    if (!fileToRead) continue;
+    const meta = readMeta(fileToRead, slug, isTranslatedFile(locale, fileToRead));
     if (meta.draft) continue;
     if (!isSince(meta.since, version)) continue;
     docs.push(meta);
@@ -102,21 +148,25 @@ export function listDocs(version: string): DocMeta[] {
     const section = sectionRank(left.section) - sectionRank(right.section);
     if (section !== 0) return section;
     if (left.order !== right.order) return left.order - right.order;
-    return left.title.localeCompare(right.title, "fr");
+    return left.title.localeCompare(right.title, locale);
   });
 }
 
-export function getNavigation(version: string): NavSection[] {
-  const docs = listDocs(version);
+export function getNavigation(
+  version: string,
+  locale: Locale = DEFAULT_LOCALE,
+): NavSection[] {
+  const docs = listDocs(version, locale);
   const sections: NavSection[] = [];
+  const sectionMeta = getSectionMeta(locale);
 
   for (const id of SECTION_ORDER) {
     const items = docs.filter((doc) => doc.section === id);
     if (items.length === 0) continue;
     sections.push({
       id,
-      title: SECTION_META[id].title,
-      description: SECTION_META[id].description,
+      title: sectionMeta[id].title,
+      description: sectionMeta[id].description,
       items,
     });
   }
@@ -124,24 +174,36 @@ export function getNavigation(version: string): NavSection[] {
   const known = new Set<string>(SECTION_ORDER);
   const extras = docs.filter((doc) => !known.has(doc.section));
   if (extras.length > 0) {
-    sections.push({ id: "autres", title: "Autres", items: extras });
+    sections.push({
+      id: "autres",
+      title: locale === "en" ? "Other" : "Autres",
+      items: extras,
+    });
   }
 
   return sections;
 }
 
-export function getDocMeta(version: string, slug: string): DocMeta | null {
-  return listDocs(version).find((doc) => doc.slug === slug) ?? null;
+export function getDocMeta(
+  version: string,
+  slug: string,
+  locale: Locale = DEFAULT_LOCALE,
+): DocMeta | null {
+  return listDocs(version, locale).find((doc) => doc.slug === slug) ?? null;
 }
 
-export async function getDoc(version: string, slug: string): Promise<DocPage | null> {
-  const meta = getDocMeta(version, slug);
+export async function getDoc(
+  version: string,
+  slug: string,
+  locale: Locale = DEFAULT_LOCALE,
+): Promise<DocPage | null> {
+  const meta = getDocMeta(version, slug, locale);
   if (!meta) return null;
 
-  const file = resolveFile(version, slug);
-  if (!file || !fs.existsSync(file)) return null;
+  const file = resolveFile(locale, version, slug);
+  if (!file) return null;
 
-  const cacheKey = `${version}:${slug}`;
+  const cacheKey = `${locale}:${version}:${slug}`;
   const cached = renderCache?.get(cacheKey);
 
   const raw = fs.readFileSync(file, "utf8");
@@ -151,12 +213,13 @@ export async function getDoc(version: string, slug: string): Promise<DocPage | n
   if (cached) {
     rendered = cached;
   } else {
-    const availableSlugs = new Set(listDocs(version).map((doc) => doc.slug));
+    const availableSlugs = new Set(listDocs(version, locale).map((doc) => doc.slug));
     rendered = await renderMarkdown(content, {
       version,
+      locale,
       basePath: BASE_PATH,
       availableSlugs,
-      fallbackVersion: VERSIONS[0].id,
+      fallbackVersion: getLatestVersion(locale).id,
     });
     renderCache?.set(cacheKey, rendered);
   }
@@ -172,8 +235,9 @@ export async function getDoc(version: string, slug: string): Promise<DocPage | n
 export function getPrevNext(
   version: string,
   slug: string,
+  locale: Locale = DEFAULT_LOCALE,
 ): { previous: DocMeta | null; next: DocMeta | null } {
-  const docs = listDocs(version);
+  const docs = listDocs(version, locale);
   const index = docs.findIndex((doc) => doc.slug === slug);
   if (index === -1) return { previous: null, next: null };
   return {
@@ -182,31 +246,40 @@ export function getPrevNext(
   };
 }
 
-export function getDocParams(): { version: string; slug: string[] }[] {
+export function getDocParams(
+  locale: Locale = DEFAULT_LOCALE,
+): { version: string; slug: string[] }[] {
   const params: { version: string; slug: string[] }[] = [];
-  for (const version of VERSIONS) {
-    for (const doc of listDocs(version.id)) {
+  for (const version of getVersions(locale)) {
+    for (const doc of listDocs(version.id, locale)) {
       params.push({ version: version.id, slug: [doc.slug] });
     }
   }
   return params;
 }
 
-export function getVersionCount(): number {
-  return VERSIONS.length;
+export function getVersionCount(locale: Locale = DEFAULT_LOCALE): number {
+  return getVersions(locale).length;
 }
 
-export function getVersionDocs(version: DocVersion): DocMeta[] {
-  return listDocs(version.id);
+export function getVersionDocs(version: DocVersion, locale: Locale = DEFAULT_LOCALE): DocMeta[] {
+  return listDocs(version.id, locale);
 }
 
-export function getFirstDoc(version: string): DocMeta | null {
-  return listDocs(version)[0] ?? null;
+export function getFirstDoc(
+  version: string,
+  locale: Locale = DEFAULT_LOCALE,
+): DocMeta | null {
+  return listDocs(version, locale)[0] ?? null;
 }
 
-export function getSectionLabel(section: string): string {
+export function getSectionLabel(
+  section: string,
+  locale: Locale = DEFAULT_LOCALE,
+): string {
+  const meta = getSectionMeta(locale);
   return (
-    SECTION_META[section as (typeof SECTION_ORDER)[number]]?.title ??
+    meta[section as (typeof SECTION_ORDER)[number]]?.title ??
     section.charAt(0).toUpperCase() + section.slice(1)
   );
 }

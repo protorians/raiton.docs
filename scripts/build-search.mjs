@@ -7,6 +7,43 @@ const contentDir = path.join(root, "content");
 const overridesDir = path.join(contentDir, "versions");
 const latest = "6.10";
 
+const locales = [
+  { code: "fr", dir: contentDir, output: "search-index.json" },
+  { code: "en", dir: path.join(contentDir, "en"), output: "search-index.en.json" },
+];
+
+function markdownFiles(directory) {
+  if (!fs.existsSync(directory)) return [];
+  return fs
+    .readdirSync(directory)
+    .filter((file) => file.endsWith(".md"))
+    .sort();
+}
+
+function sharedFiles(locale) {
+  const files = new Set(markdownFiles(contentDir));
+  if (locale !== "fr") {
+    for (const file of markdownFiles(locale.dir)) files.add(file);
+  }
+  return [...files].sort();
+}
+
+function resolveFile(locale, slug) {
+  const candidates =
+    locale.code === "fr"
+      ? [
+          path.join(overridesDir, latest, `${slug}.md`),
+          path.join(contentDir, `${slug}.md`),
+        ]
+      : [
+          path.join(locale.dir, "versions", latest, `${slug}.md`),
+          path.join(locale.dir, `${slug}.md`),
+          path.join(overridesDir, latest, `${slug}.md`),
+          path.join(contentDir, `${slug}.md`),
+        ];
+  return candidates.find((candidate) => fs.existsSync(candidate)) ?? null;
+}
+
 function walkText(markdown) {
   return markdown
     .replace(/```[\s\S]*?```/g, " ")
@@ -55,14 +92,13 @@ function headings(markdown) {
 fs.mkdirSync(path.join(root, "public"), { recursive: true });
 fs.writeFileSync(path.join(root, "public", ".nojekyll"), "");
 
-const entries = [];
-if (fs.existsSync(contentDir)) {
-  const files = fs.readdirSync(contentDir).filter((file) => file.endsWith(".md"));
+for (const locale of locales) {
+  const entries = [];
 
-  for (const file of files) {
+  for (const file of sharedFiles(locale)) {
     const slug = file.replace(/\.md$/, "");
-    const override = path.join(overridesDir, latest, `${slug}.md`);
-    const filePath = fs.existsSync(override) ? override : path.join(contentDir, file);
+    const filePath = resolveFile(locale, slug);
+    if (!filePath) continue;
     const raw = fs.readFileSync(filePath, "utf8");
     const { data, content } = matter(raw);
 
@@ -79,13 +115,13 @@ if (fs.existsSync(contentDir)) {
       text: walkText(content).slice(0, 2200),
     });
   }
+
+  entries.sort((left, right) => left.order - right.order);
+
+  fs.writeFileSync(
+    path.join(root, "public", locale.output),
+    JSON.stringify(entries, null, 0),
+  );
+
+  console.log(`${locale.output}: ${entries.length} pages`);
 }
-
-entries.sort((left, right) => left.order - right.order);
-
-fs.writeFileSync(
-  path.join(root, "public", "search-index.json"),
-  JSON.stringify(entries, null, 0),
-);
-
-console.log(`search-index.json: ${entries.length} pages`);

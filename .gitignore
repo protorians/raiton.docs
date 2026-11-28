@@ -6,3 +6,4 @@ out
 next-env.d.ts
 .idea
 public/search-index.json
+public/search-index.en.json

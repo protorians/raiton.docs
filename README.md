@@ -64,6 +64,31 @@ export const VERSIONS = [
 Le sélecteur de version navigue vers `/docs/<version>`. La version `latest`
 est mise en avant, les autres affichent un bandeau d'archive.
 
+## Internationalisation
+
+Le site est disponible en français (langue par défaut, sans préfixe) et en
+anglais sous `/en`.
+
+- Les textes d'interface, les métadonnées et les notes de version sont définis
+  dans `lib/i18n.ts` et `lib/versions.ts`.
+- Le contenu anglais vit dans `content/en/` (même arborescence, mêmes noms de
+  fichiers que `content/`). Les pages sans traduction retombent sur le contenu
+  français avec un bandeau explicite.
+- La langue est détectée au premier chargement à partir de
+  `navigator.languages`, puis mémorisée dans `localStorage`
+  (`raiton-locale`). Un choix explicite dans le sélecteur de langue est
+  prioritaire.
+- Le sélecteur de langue du header conserve la page, la version et l'ancre
+  courantes.
+- Chaque page expose ses alternatives `hreflang` (`fr` et `en`) et le sitemap
+  contient les deux arborescences.
+- L'index de recherche est généré pour chaque langue :
+  `public/search-index.json` et `public/search-index.en.json`.
+
+Pour ajouter une traduction, créez le fichier correspondant dans
+`content/en/`. Les liens internes restent écrits `/docs/<slug>` : le rendu
+ajoute automatiquement la version, la langue et le `basePath`.
+
 ## Déploiement GitHub Pages
 
 Le workflow `.github/workflows/deploy.yml` construit et publie `out/` à chaque
@@ -85,11 +110,13 @@ Variables utiles :
 ## Structure
 
 ```text
-app/                 routes Next.js (accueil, /docs, /docs/[version])
-components/          header, sidebar, TOC, recherche, landing
-content/             pages Markdown versionnées
-content/versions/    overrides par version
-lib/                 chargement, rendu Markdown, versions, site
+app/                 routes Next.js (accueil, /docs, /docs/[version], /en)
+components/          header, sidebar, TOC, recherche, landing, sélecteur de langue
+content/             pages Markdown versionnées (français)
+content/en/          traductions anglaises
+content/versions/    overrides par version (français)
+content/en/versions/ overrides par version (anglais)
+lib/                 chargement, rendu Markdown, versions, site, i18n
 scripts/             génération de l'index de recherche
 public/brand/        logo optimisé et image Open Graph
 public/              favicon, apple-icon, .nojekyll

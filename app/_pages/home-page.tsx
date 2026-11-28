@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   ArrowRight,
   Boxes,
@@ -18,118 +19,68 @@ import { CodeCopy } from "@/components/code-copy";
 import { CopyButton } from "@/components/copy-button";
 import { HeroSignal } from "@/components/hero-signal";
 import { listDocs } from "@/lib/docs";
-import { BASE_PATH, SITE } from "@/lib/site";
+import {
+  getMessages,
+  interpolate,
+  localizePath,
+  type Locale,
+} from "@/lib/i18n";
 import { renderMarkdown } from "@/lib/markdown";
-import { LATEST_VERSION } from "@/lib/versions";
+import { BASE_PATH, SITE } from "@/lib/site";
+import { getLatestVersion } from "@/lib/versions";
 
-const v = LATEST_VERSION.id;
+const FEATURE_ICONS = {
+  runtimes: Zap,
+  injection: Boxes,
+  contracts: Sparkles,
+  mcp: Radio,
+  scheduler: Timer,
+  observability: ShieldCheck,
+} as const;
 
-const FEATURES = [
-  {
-    icon: Zap,
-    title: "Bun-first, trois runtimes",
-    description:
-      "Bun.serve natif en production, adaptateurs Node.js et Deno complets. Le même contrôleur, le même bootstrap, le même comportement.",
-    href: `/docs/${v}/runtimes`,
-    tag: "Runtime",
-    pills: ["Bun", "Node.js", "Deno"],
-    wide: true,
-  },
-  {
-    icon: Boxes,
-    title: "Injection explicite",
-    description:
-      "Singletons, transients, cycles onInit/onMount/onUnmount et détection des dépendances circulaires. Rien d’implicite.",
-    href: `/docs/${v}/injection`,
-    tag: "Architecture",
-  },
-  {
-    icon: Sparkles,
-    title: "Contrats schema-first",
-    description:
-      "Une définition TypeBox alimente la validation runtime, les types TypeScript, OpenAPI et le client généré. Une seule source de vérité.",
-    href: `/docs/${v}/contracts`,
-    tag: "Contrats",
-  },
-  {
-    icon: Radio,
-    title: "MCP HTTP + stdio",
-    description:
-      "Exposez outils, prompts et ressources aux agents IA, sur le même port que votre API. Schémas, scopes, audit et limitation de débit.",
-    href: `/docs/${v}/mcp`,
-    tag: "IA",
-    pills: ["tools", "prompts", "resources"],
-    wide: true,
-  },
-  {
-    icon: Timer,
-    title: "Scheduler et files",
-    description:
-      "Cron, intervalles, tâches nommées et backends mémoire, Redis ou RabbitMQ. HMR et injection de dépendances inclus.",
-    href: `/docs/${v}/scheduler`,
-    tag: "Jobs",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Observabilité opt-in",
-    description:
-      "Corrélation, métriques Prometheus, traces OTLP et arrêt gracieux. Désactivée, elle n’ajoute aucun coût sur le chemin chaud.",
-    href: `/docs/${v}/observability`,
-    tag: "Production",
-    pills: ["Prometheus", "OTLP", "health"],
-    wide: true,
-  },
-];
+const LIFECYCLE_ICONS = {
+  create: Wand2,
+  develop: Terminal,
+  ship: Rocket,
+} as const;
 
-const LIFECYCLE = [
-  {
-    icon: Wand2,
-    title: "Créer",
-    description: "Un projet complet, testé et prêt à démarrer, en une commande.",
-    code: "bun raiton new my-api --template api",
-  },
-  {
-    icon: Terminal,
-    title: "Développer",
-    description: "HMR sur les contrôleurs, services, sockets, MCP et jobs.",
-    code: "bun raiton dev",
-  },
-  {
-    icon: Rocket,
-    title: "Livrer",
-    description: "Build, diagnostic, contrat OpenAPI et client typé.",
-    code: "bun raiton build && bun raiton start",
-  },
-];
+const START_ICONS = {
+  quickstart: Zap,
+  application: Boxes,
+  contracts: Sparkles,
+  decorators: Terminal,
+} as const;
 
-const START = [
-  {
-    href: `/docs/${v}/quickstart`,
-    title: "Démarrage rapide",
-    detail: "Serveur en 5 minutes",
-    icon: Zap,
-  },
-  {
-    href: `/docs/${v}/application`,
-    title: "Application & cycle de vie",
-    detail: "Application, routes, DI",
-    icon: Boxes,
-  },
-  {
-    href: `/docs/${v}/contracts`,
-    title: "Contrats",
-    detail: "Validation, OpenAPI, SDK",
-    icon: Sparkles,
-  },
-  {
-    href: `/docs/${v}/decorators`,
-    title: "Référence",
-    detail: "Décorateurs et API core",
-    icon: Terminal,
-  },
-];
+export function homeMetadata(locale: Locale): Metadata {
+  const home = getMessages(locale).home;
+  return {
+    title: { absolute: home.metaTitle },
+    description: home.metaDescription,
+    alternates: {
+      canonical: localizePath(locale, "/"),
+      languages: {
+        fr: "/",
+        en: "/en/",
+      },
+    },
+    openGraph: {
+      title: home.metaTitle,
+      description: home.metaDescription,
+      locale: locale === "en" ? "en_US" : "fr_FR",
+    },
+    twitter: {
+      title: home.metaTitle,
+      description: home.metaDescription,
+    },
+  };
+}
 
-export default async function HomePage() {
+export async function HomePage({ locale }: { locale: Locale }) {
+  const messages = getMessages(locale);
+  const home = messages.home;
+  const latest = getLatestVersion(locale);
+  const v = latest.id;
+
   const heroCode = await renderMarkdown(
     `\`\`\`ts
 import {
@@ -152,7 +103,7 @@ export class UsersController {
   }
 }
 \`\`\``,
-    { version: v, basePath: BASE_PATH, nightCode: true },
+    { version: v, locale, basePath: BASE_PATH, nightCode: true },
   );
 
   const controller = await renderMarkdown(
@@ -183,7 +134,7 @@ export class UsersController {
   }
 }
 \`\`\``,
-    { version: v, basePath: BASE_PATH, nightCode: true },
+    { version: v, locale, basePath: BASE_PATH, nightCode: true },
   );
 
   const bootstrap = await renderMarkdown(
@@ -202,10 +153,10 @@ export default async function main(thread: ThreadInterface) {
     .run()
 }
 \`\`\``,
-    { version: v, basePath: BASE_PATH, nightCode: true },
+    { version: v, locale, basePath: BASE_PATH, nightCode: true },
   );
 
-  const docs = listDocs(v);
+  const docs = listDocs(v, locale);
   const titles = docs.map((doc) => doc.title);
   const wallRows = [
     titles.filter((_, index) => index % 3 === 0),
@@ -229,7 +180,7 @@ export default async function main(thread: ThreadInterface) {
           <div className="relative z-[2] min-w-0" data-reveal>
             <div className="flex flex-wrap items-center gap-2">
               <span className="version-pill" data-status="latest">
-                {LATEST_VERSION.label} · beta
+                {latest.label} · {home.hero.beta}
               </span>
               <span className="chip">Bun-first</span>
               <span className="chip">Node.js</span>
@@ -238,22 +189,24 @@ export default async function main(thread: ThreadInterface) {
             </div>
 
             <h1 className="display-title mt-6 text-[2.55rem] sm:text-[3.9rem] lg:text-[4.35rem]">
-              Le backend TypeScript,
+              {home.hero.titleFirst}
               <br />
-              <span className="text-[var(--accent)]">sans cérémonie.</span>
+              <span className="text-[var(--accent)]">{home.hero.titleSecond}</span>
             </h1>
 
             <p className="lede mt-6 max-w-xl text-[16px] sm:text-[17px]">
-              Contrôleurs, injection de dépendances, contrats, MCP et scheduler.
-              Un seul framework, trois runtimes, zéro magie inutile.
+              {home.hero.lede}
             </p>
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
-              <Link href={`/docs/${v}/quickstart`} className="btn btn-primary btn-lg">
-                Commencer <ArrowRight className="h-4 w-4" />
+              <Link
+                href={localizePath(locale, `/docs/${v}/quickstart`)}
+                className="btn btn-primary btn-lg"
+              >
+                {home.hero.start} <ArrowRight className="h-4 w-4" />
               </Link>
               <a href={SITE.github} target="_blank" rel="noreferrer" className="btn btn-glass btn-lg">
-                <Github className="h-4 w-4" /> Voir sur GitHub
+                <Github className="h-4 w-4" /> {home.hero.github}
               </a>
             </div>
 
@@ -264,13 +217,13 @@ export default async function main(thread: ThreadInterface) {
               </code>
               <CopyButton
                 value="bun add raiton reflect-metadata"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[var(--accent-soft)] px-3 py-2 text-[11.5px] font-medium text-[var(--accent-strong)] transition-colors hover:bg-[rgba(169,196,255,.18)]"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[var(--accent-soft)] px-3 py-2 text-[11.5px] font-medium text-[var(--accent-strong)] transition-colors hover:bg-[rgba(241,90,129,.2)]"
               />
             </div>
 
             <p className="mt-3 flex items-center gap-1.5 text-[11.5px] text-[var(--faint)]">
               <Check className="h-3.5 w-3.5 text-[var(--mint)]" />
-              Fonctionne aussi avec npm, pnpm et Deno. TypeScript 5+.
+              {home.hero.installNote}
             </p>
           </div>
 
@@ -281,8 +234,8 @@ export default async function main(thread: ThreadInterface) {
               style={{ "--depth": 18 } as CSSProperties}
               aria-hidden
             >
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_58%_38%,rgba(63,123,255,.34),transparent_62%)]" />
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_28%_72%,rgba(123,77,255,.25),transparent_60%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_58%_38%,rgba(241,90,129,.32),transparent_62%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_28%_72%,rgba(244,202,164,.24),transparent_60%)]" />
             </div>
 
             <div data-parallax className="min-w-0" style={{ "--depth": 7 } as CSSProperties}>
@@ -308,18 +261,18 @@ export default async function main(thread: ThreadInterface) {
             </div>
 
             <div
-              className="pointer-events-none absolute -left-4 -top-14 hidden rounded-xl border border-white/[0.14] bg-[rgba(10,14,26,.92)] px-3 py-2 shadow-[0_18px_40px_-18px_rgba(0,0,0,.9)] backdrop-blur-md sm:block"
+              className="pointer-events-none absolute -left-4 -top-14 hidden rounded-xl border border-white/[0.14] bg-[rgba(24,13,17,.92)] px-3 py-2 shadow-[0_18px_40px_-18px_rgba(0,0,0,.9)] backdrop-blur-md sm:block"
               data-parallax
               style={{ "--depth": 24 } as CSSProperties}
             >
               <p className="font-mono text-[9.5px] text-white/45">POST /api/users</p>
               <p className="text-[11px] font-medium text-white">
-                <span className="text-[#7de8a8]">201</span> Created
+                <span className="text-[#86e0a8]">201</span> Created
               </p>
             </div>
 
             <div
-              className="pointer-events-none absolute -bottom-6 -right-3 hidden rounded-xl border border-white/[0.14] bg-[rgba(10,14,26,.86)] px-3 py-2 shadow-[0_18px_40px_-18px_rgba(0,0,0,.9)] backdrop-blur-md sm:block"
+              className="pointer-events-none absolute -bottom-6 -right-3 hidden rounded-xl border border-white/[0.14] bg-[rgba(24,13,17,.86)] px-3 py-2 shadow-[0_18px_40px_-18px_rgba(0,0,0,.9)] backdrop-blur-md sm:block"
               data-parallax
               style={{ "--depth": 30 } as CSSProperties}
             >
@@ -328,11 +281,11 @@ export default async function main(thread: ThreadInterface) {
             </div>
 
             <div
-              className="pointer-events-none absolute -bottom-3 left-10 flex items-center gap-1.5 rounded-full border border-white/[0.14] bg-[rgba(10,14,26,.86)] px-3 py-1.5 shadow-[0_18px_40px_-18px_rgba(0,0,0,.9)] backdrop-blur-md"
+              className="pointer-events-none absolute -bottom-3 left-10 flex items-center gap-1.5 rounded-full border border-white/[0.14] bg-[rgba(24,13,17,.86)] px-3 py-1.5 shadow-[0_18px_40px_-18px_rgba(0,0,0,.9)] backdrop-blur-md"
               data-parallax
               style={{ "--depth": 20 } as CSSProperties}
             >
-              <span className="h-1.5 w-1.5 animate-soft-pulse rounded-full bg-[#7de8a8]" />
+              <span className="h-1.5 w-1.5 animate-soft-pulse rounded-full bg-[#86e0a8]" />
               <span className="font-mono text-[10px] text-white/70">HMR connected</span>
             </div>
           </div>
@@ -347,23 +300,18 @@ export default async function main(thread: ThreadInterface) {
       </section>
 
       {/* Proof */}
-      <section className="border-y border-[var(--border)] bg-[rgba(255,255,255,.018)]">
+      <section className="border-y border-[var(--border)] bg-[rgba(255,235,240,.022)]">
         <div className="site-container grid divide-y divide-[var(--border)] sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4">
-          {[
-            ["1", "contrat · 4 artefacts", "validation, types, OpenAPI, SDK"],
-            ["3", "runtimes", "Bun, Node.js et Deno"],
-            ["15", "commandes CLI", "du scaffold au diagnostic"],
-            ["0", "coût par défaut", "observabilité opt-in"],
-          ].map(([value, label, detail], index) => (
+          {home.proof.map((item, index) => (
             <div
-              key={label}
+              key={item.label}
               className={`py-6 lg:px-8 ${index > 0 ? "lg:border-l lg:border-[var(--border)]" : ""}`}
               data-reveal
               style={{ "--d": index } as CSSProperties}
             >
-              <p className="text-[30px] font-bold tracking-[-0.045em] text-[var(--fg)]">{value}</p>
-              <p className="mt-0.5 text-[12.5px] font-medium text-[var(--fg-soft)]">{label}</p>
-              <p className="mt-0.5 text-[11.5px] text-[var(--faint)]">{detail}</p>
+              <p className="text-[30px] font-bold tracking-[-0.045em] text-[var(--fg)]">{item.value}</p>
+              <p className="mt-0.5 text-[12.5px] font-medium text-[var(--fg-soft)]">{item.label}</p>
+              <p className="mt-0.5 text-[11.5px] text-[var(--faint)]">{item.detail}</p>
             </div>
           ))}
         </div>
@@ -372,24 +320,23 @@ export default async function main(thread: ThreadInterface) {
       {/* Pieces */}
       <section className="site-container py-16 lg:py-24">
         <div className="max-w-2xl" data-reveal>
-          <p className="eyebrow">Pourquoi Raiton</p>
+          <p className="eyebrow">{home.featuresSection.eyebrow}</p>
           <h2 className="mt-3 text-balance text-[2rem] font-bold leading-[1.05] tracking-[-0.04em] sm:text-[2.6rem]">
-            Tout ce qu’une API attend. Rien de plus.
+            {home.featuresSection.title}
           </h2>
           <p className="lede mt-4 text-[14.5px]">
-            Raiton assemble les briques indispensables d’un backend TypeScript
-            derrière une API cohérente, typée et documentée. Vous gardez le contrôle
-            sur chaque couche.
+            {home.featuresSection.lede}
           </p>
         </div>
 
         <div className="mt-9 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((feature, index) => {
-            const Icon = feature.icon;
+          {home.features.map((feature, index) => {
+            const Icon = FEATURE_ICONS[feature.key as keyof typeof FEATURE_ICONS] ?? Zap;
+            const href = localizePath(locale, `/docs/${v}/${feature.key}`);
             return (
               <Link
                 key={feature.title}
-                href={feature.href}
+                href={href}
                 className={`spotlight glass group relative flex flex-col rounded-2xl p-5 transition-colors duration-200 hover:border-[color-mix(in_srgb,var(--accent)_28%,var(--border))] ${
                   feature.wide ? "lg:col-span-2" : ""
                 }`}
@@ -413,18 +360,18 @@ export default async function main(thread: ThreadInterface) {
                 </p>
                 {feature.pills && (
                   <div className="mt-4 flex flex-wrap gap-1.5">
-                    {feature.pills.map((runtime) => (
+                    {feature.pills.map((pill) => (
                       <span
-                        key={runtime}
+                        key={pill}
                         className="rounded-full border border-[var(--border)] bg-[rgba(255,255,255,.04)] px-2.5 py-1 font-mono text-[10px] text-[var(--fg-soft)]"
                       >
-                        {runtime}
+                        {pill}
                       </span>
                     ))}
                   </div>
                 )}
                 <span className="mt-4 inline-flex items-center gap-1 text-[11.5px] font-medium text-[var(--accent-strong)] opacity-70 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
-                  Lire la documentation <ArrowRight className="h-3 w-3" />
+                  {home.featuresSection.cta} <ArrowRight className="h-3 w-3" />
                 </span>
               </Link>
             );
@@ -433,20 +380,19 @@ export default async function main(thread: ThreadInterface) {
       </section>
 
       {/* The code */}
-      <section className="border-y border-[var(--border)] bg-[rgba(255,255,255,.018)]">
+      <section className="border-y border-[var(--border)] bg-[rgba(255,235,240,.022)]">
         <div className="site-container py-16 lg:py-24">
           <div className="flex flex-wrap items-end justify-between gap-5" data-reveal>
             <div className="max-w-2xl">
               <h2 className="text-balance text-[2rem] font-bold leading-[1.05] tracking-[-0.04em] sm:text-[2.6rem]">
-                Déclaratif, typé, sans surprise.
+                {home.codeSection.title}
               </h2>
               <p className="lede mt-4 text-[14.5px]">
-                Un contrôleur se lit comme la route qu’il décrit. Le contrat
-                alimente la validation et la documentation sans duplication.
+                {home.codeSection.lede}
               </p>
             </div>
-            <Link href={`/docs/${v}/tutorial`} className="btn btn-glass">
-              Construire une API complète <ArrowRight className="h-4 w-4" />
+            <Link href={localizePath(locale, `/docs/${v}/tutorial`)} className="btn btn-glass">
+              {home.codeSection.cta} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
@@ -479,7 +425,7 @@ export default async function main(thread: ThreadInterface) {
                     className="code-night max-h-[390px] overflow-y-auto text-white/85"
                     dangerouslySetInnerHTML={{ __html: snippet.html }}
                   />
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#080b13] to-transparent" />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#0a0609] to-transparent" />
                 </div>
               </div>
             ))}
@@ -490,10 +436,10 @@ export default async function main(thread: ThreadInterface) {
             data-reveal
           >
             <Terminal className="h-4 w-4 text-[var(--accent)]" />
-            <span className="text-[12px] text-[var(--muted)]">Puis, en local :</span>
+            <span className="text-[12px] text-[var(--muted)]">{home.codeSection.local}</span>
             <code className="font-mono text-[12px] text-[var(--fg)]">bun raiton dev</code>
             <span className="text-[11.5px] text-[var(--faint)]">
-              HMR sur les contrôleurs, services, sockets, MCP et jobs.
+              {home.codeSection.hmr}
             </span>
           </div>
         </div>
@@ -503,20 +449,18 @@ export default async function main(thread: ThreadInterface) {
       <section className="site-container py-16 lg:py-24">
         <div className="grid gap-10 lg:grid-cols-[.78fr_1.22fr] lg:items-start">
           <div data-reveal>
-            <p className="eyebrow">Le cycle complet</p>
+            <p className="eyebrow">{home.lifecycle.eyebrow}</p>
             <h2 className="mt-3 text-[2rem] font-bold leading-[1.06] tracking-[-0.04em] sm:text-[2.4rem]">
-              Du premier fichier au premier déploiement.
+              {home.lifecycle.title}
             </h2>
             <p className="lede mt-4 text-[14.5px]">
-              Le CLI couvre l’onboarding, la génération de code, le diagnostic,
-              les contrats et la génération de client. Les commandes machine
-              renvoient un JSON stable, les erreurs un code de sortie prévisible.
+              {home.lifecycle.lede}
             </p>
             <Link
-              href={`/docs/${v}/cli`}
+              href={localizePath(locale, `/docs/${v}/cli`)}
               className="link-underline mt-5 inline-flex items-center gap-1 text-[13px]"
             >
-              Explorer le CLI <ArrowRight className="h-3.5 w-3.5" />
+              {home.lifecycle.cta} <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
 
@@ -525,8 +469,8 @@ export default async function main(thread: ThreadInterface) {
               className="pointer-events-none absolute left-0 right-0 top-[42px] hidden h-px bg-gradient-to-r from-transparent via-[var(--border-strong)] to-transparent sm:block"
               aria-hidden
             />
-            {LIFECYCLE.map((item, index) => {
-              const Icon = item.icon;
+            {home.lifecycle.items.map((item, index) => {
+              const Icon = LIFECYCLE_ICONS[item.key as keyof typeof LIFECYCLE_ICONS] ?? Zap;
               return (
                 <div
                   key={item.title}
@@ -552,27 +496,27 @@ export default async function main(thread: ThreadInterface) {
       </section>
 
       {/* Where to go */}
-      <section className="border-y border-[var(--border)] bg-[rgba(255,255,255,.018)]">
+      <section className="border-y border-[var(--border)] bg-[rgba(255,235,240,.022)]">
         <div className="site-container py-16 lg:py-20">
           <div className="flex flex-wrap items-end justify-between gap-4" data-reveal>
             <div>
-              <p className="eyebrow">Documentation</p>
+              <p className="eyebrow">{home.startSection.eyebrow}</p>
               <h2 className="mt-3 text-[2rem] font-bold tracking-[-0.04em]">
-                Par où commencer&nbsp;?
+                {home.startSection.title}
               </h2>
             </div>
-            <Link href="/docs" className="btn btn-glass">
-              Toute la documentation <ArrowRight className="h-4 w-4" />
+            <Link href={localizePath(locale, "/docs")} className="btn btn-glass">
+              {home.startSection.cta} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {START.map((item, index) => {
-              const Icon = item.icon;
+            {home.startSection.items.map((item, index) => {
+              const Icon = START_ICONS[item.key as keyof typeof START_ICONS] ?? Zap;
               return (
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  key={item.slug}
+                  href={localizePath(locale, `/docs/${v}/${item.slug}`)}
                   className="spotlight glass group rounded-xl p-4 transition-colors hover:border-[color-mix(in_srgb,var(--accent)_28%,var(--border))]"
                   data-spotlight
                   data-reveal
@@ -612,7 +556,10 @@ export default async function main(thread: ThreadInterface) {
               </div>
             </div>
             <p className="mt-1 text-center font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--faint)]">
-              {docs.length} pages · {LATEST_VERSION.label} · une seule source
+              {interpolate(home.startSection.wallFooter, {
+                count: docs.length,
+                version: latest.label,
+              })}
             </p>
           </div>
         </div>
@@ -624,19 +571,19 @@ export default async function main(thread: ThreadInterface) {
           <div className="glass rounded-2xl p-6 sm:p-8" data-reveal>
             <div className="flex flex-wrap items-center gap-2">
               <span className="version-pill" data-status="latest">
-                {LATEST_VERSION.label} · latest
+                {latest.label} · {messages.common.latest}
               </span>
-              <span className="chip font-mono">{LATEST_VERSION.tag}</span>
-              <span className="chip">{LATEST_VERSION.released}</span>
+              <span className="chip font-mono">{latest.tag}</span>
+              <span className="chip">{latest.released}</span>
             </div>
             <h2 className="mt-4 text-[1.6rem] font-bold tracking-[-0.035em]">
-              {LATEST_VERSION.headline}
+              {latest.headline}
             </h2>
             <p className="mt-2 max-w-2xl text-[13.5px] leading-relaxed text-[var(--muted)]">
-              {LATEST_VERSION.summary}
+              {latest.summary}
             </p>
             <ul className="mt-5 grid gap-2 sm:grid-cols-2">
-              {LATEST_VERSION.highlights.map((highlight) => (
+              {latest.highlights.map((highlight) => (
                 <li
                   key={highlight}
                   className="flex gap-2 text-[12.5px] leading-relaxed text-[var(--fg-soft)]"
@@ -647,37 +594,36 @@ export default async function main(thread: ThreadInterface) {
               ))}
             </ul>
             <Link
-              href={`/docs/${v}/releases`}
+              href={localizePath(locale, `/docs/${v}/releases`)}
               className="mt-6 inline-flex items-center gap-1 text-[12.5px] font-medium text-[var(--accent-strong)]"
             >
-              Lire les notes de version <ArrowRight className="h-3.5 w-3.5" />
+              {home.release.readNotes} <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
 
-          <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[linear-gradient(180deg,#141a2a,#0b0e18)] p-8 text-white shadow-[inset_0_1px_0_rgba(255,255,255,.14),0_60px_120px_-50px_rgba(0,0,0,.95)]">
+          <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-[linear-gradient(180deg,#1c1015,#0b0609)] p-8 text-white shadow-[inset_0_1px_0_rgba(255,255,255,.14),0_60px_120px_-50px_rgba(0,0,0,.95)]">
             <div className="orb absolute -right-10 -top-14 h-40 w-40 opacity-80 sm:-right-14 sm:-top-16 sm:h-52 sm:w-52" aria-hidden />
-            <div className="absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-[rgba(123,77,255,.22)] blur-3xl" aria-hidden />
+            <div className="absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-[rgba(241,90,129,.22)] blur-3xl" aria-hidden />
             <div
-              className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_88%_0%,rgba(11,14,24,.6),transparent_58%)]"
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_88%_0%,rgba(10,4,7,.6),transparent_58%)]"
               aria-hidden
             />
             <div className="relative">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-[#c3d6ff]">
-                Prêt à construire ?
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-[#ff9db0]">
+                {home.release.readyEyebrow}
               </p>
               <h2 className="mt-3 text-[1.7rem] font-bold leading-[1.1] tracking-[-0.035em]">
-                Votre première API tourne avant la pause café.
+                {home.release.readyTitle}
               </h2>
               <p className="mt-3 text-[13px] leading-relaxed text-white/65">
-                Un projet complet, un serveur qui répond, des tests qui passent.
-                Ensuite, vous décidez de la base de données.
+                {home.release.readyBody}
               </p>
               <div className="mt-6 flex flex-wrap gap-2.5">
                 <Link
-                  href={`/docs/${v}/quickstart`}
-                  className="inline-flex h-10 items-center gap-2 rounded-full bg-[linear-gradient(180deg,#c7d8ff,#a9c4ff)] px-4 text-[12.5px] font-semibold text-[#08101f] shadow-[inset_0_1px_0_rgba(255,255,255,.7),0_8px_24px_-10px_rgba(169,196,255,.65)] transition-transform hover:-translate-y-0.5"
+                  href={localizePath(locale, `/docs/${v}/quickstart`)}
+                  className="inline-flex h-10 items-center gap-2 rounded-full bg-[linear-gradient(180deg,#ff8fa8,#f15a81)] px-4 text-[12.5px] font-semibold text-[#2c0e17] shadow-[inset_0_1px_0_rgba(255,255,255,.7),0_8px_24px_-10px_rgba(241,90,129,.6)] transition-transform hover:-translate-y-0.5"
                 >
-                  Démarrer <ArrowRight className="h-3.5 w-3.5" />
+                  {home.release.start} <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
                 <a
                   href={SITE.github}
@@ -685,11 +631,11 @@ export default async function main(thread: ThreadInterface) {
                   rel="noreferrer"
                   className="inline-flex h-10 items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-4 text-[12.5px] font-medium text-white/90 transition-colors hover:border-white/40 hover:bg-white/[0.12]"
                 >
-                  <Github className="h-3.5 w-3.5" /> GitHub
+                  <Github className="h-3.5 w-3.5" /> {messages.common.github}
                 </a>
               </div>
               <p className="mt-6 font-mono text-[10.5px] text-white/40">
-                bun raiton new my-api --yes
+                {home.release.command}
               </p>
             </div>
           </div>

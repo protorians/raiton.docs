@@ -8,6 +8,7 @@ import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import { unified } from "unified";
+import { DEFAULT_LOCALE, getMessages, localizePath, type Locale } from "./i18n";
 
 export interface TocEntry {
   id: string;
@@ -22,6 +23,7 @@ export interface RenderResult {
 
 export interface RenderOptions {
   version: string;
+  locale?: Locale;
   basePath?: string;
   /** Slugs documented in the current version. */
   availableSlugs?: Set<string>;
@@ -30,15 +32,6 @@ export interface RenderOptions {
   /** Code is always a night surface, in both themes. */
   nightCode?: boolean;
 }
-
-const CALLOUT_TITLES: Record<string, string> = {
-  note: "Note",
-  tip: "Astuce",
-  warning: "Attention",
-  danger: "Danger",
-  info: "Info",
-  important: "Important",
-};
 
 function escapeAttribute(value: string): string {
   return value
@@ -52,7 +45,8 @@ function escapeAttribute(value: string): string {
  * Turn :::note blocks into styled containers. Inner content stays markdown
  * and is parsed by remark afterwards.
  */
-function expandCallouts(markdown: string): string {
+function expandCallouts(markdown: string, locale: Locale): string {
+  const calloutTitles = getMessages(locale).markdown.callouts;
   const lines = markdown.split("\n");
   const output: string[] = [];
   let fence: string | null = null;
@@ -78,7 +72,10 @@ function expandCallouts(markdown: string): string {
     let title = (opening[2] || "").trim();
     const explicitTitle = title.match(/\{title="([^"]+)"\}/);
     if (explicitTitle) title = explicitTitle[1];
-    title = title || CALLOUT_TITLES[type] || "Note";
+    title =
+      title ||
+      calloutTitles[type as keyof typeof calloutTitles] ||
+      calloutTitles.note;
 
     const inner: string[] = [];
     let closed = false;
@@ -100,7 +97,7 @@ function expandCallouts(markdown: string): string {
     output.push(
       `<div class="callout callout-${type}" data-title="${escapeAttribute(title)}">`,
       "",
-      ...expandCallouts(inner.join("\n")).split("\n"),
+      ...expandCallouts(inner.join("\n"), locale).split("\n"),
       "",
       "</div>",
     );
@@ -177,8 +174,11 @@ function rewriteLink(
   if (!href) return href;
   if (/^(https?:|mailto:|tel:|data:|#)/.test(href)) return href;
 
+  const locale = options.locale ?? DEFAULT_LOCALE;
+  const localized = (pathname: string) => `${basePath}${localizePath(locale, pathname)}`;
+
   if (href === "/" || href === "") {
-    return `${basePath}/`;
+    return localized("/");
   }
 
   if (href.startsWith("/docs")) {
@@ -203,11 +203,11 @@ function rewriteLink(
     }
 
     const suffix = parts.length > 0 ? `/${parts.join("/")}/` : "/";
-    return `${basePath}/docs/${targetVersion}${suffix}${hash ? `#${hash}` : ""}`;
+    return `${localized(`/docs/${targetVersion}${suffix}`)}${hash ? `#${hash}` : ""}`;
   }
 
   if (href.startsWith("/")) {
-    return `${basePath}${href}`;
+    return localized(href);
   }
 
   return href;
@@ -245,7 +245,9 @@ export async function renderMarkdown(
   source: string,
   options: RenderOptions,
 ): Promise<RenderResult> {
-  const expanded = expandCallouts(source);
+  const locale = options.locale ?? DEFAULT_LOCALE;
+  const messages = getMessages(locale);
+  const expanded = expandCallouts(source, locale);
   const toc = buildToc(expanded);
 
   const file = await unified()
@@ -258,14 +260,14 @@ export async function renderMarkdown(
       behavior: "append",
       properties: {
         className: ["heading-anchor"],
-        ariaLabel: "Lien vers cette section",
+        ariaLabel: messages.markdown.headingAnchor,
       },
       content: { type: "text", value: "#" },
     })
     .use(rehypeShiki, {
       themes: options.nightCode
         ? { light: "vesper", dark: "vesper" }
-        : { light: "github-light", dark: "github-dark" },
+        : { light: "rose-pine-dawn", dark: "vesper" },
     })
     .use(rehypeDocsLinks, options)
     .use(rehypeStringify)
